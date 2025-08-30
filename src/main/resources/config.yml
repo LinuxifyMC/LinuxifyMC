@@ -2,11 +2,6 @@
 database:
   filename: "data.db"
 
-  host: "localhost"
-  port: 3306
-  username: "root"
-  password: "password"
-
   journal_mode: "WAL"  # Options: WAL, DELETE, TRUNCATE, PERSIST, MEMORY, OFF
   synchronous: 1       # 0=OFF, 1=NORMAL, 2=FULL, 3=EXTRA
   auto_vacuum: 1       # 0=NONE, 1=FULL, 2=INCREMENTAL

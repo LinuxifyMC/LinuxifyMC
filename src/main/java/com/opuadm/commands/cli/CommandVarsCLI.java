@@ -25,9 +25,11 @@ public class CommandVarsCLI
         return List.of("-a", "-o", "-ao");
     }
 
-    public static List<String> UnameOpts()  { return List.of("-s", "-v"); }
+    public static List<String> UnameOpts()  { return List.of("-s", "-v", "--help", "-h"); }
 
     public static List<String> UnameOptsS()  { return List.of("-v"); }
+
+    public static List<String> MkdirOpts() { return List.of("--help", "-h"); }
 
     public static List<String> ChmodPerms() { return List.of("777", "644", "755", "700", "766"); }
 }

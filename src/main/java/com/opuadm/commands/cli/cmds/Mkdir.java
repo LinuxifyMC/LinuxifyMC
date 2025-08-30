@@ -10,16 +10,25 @@ import com.opuadm.LinuxifyMC;
 public class Mkdir {
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (args.length != 2) {
-            sender.sendMessage("Usage: mkdir <directory_name>");
+            sender.sendMessage("mkdir: missing operand");
+            sender.sendMessage("Try 'mkdir --help' for more information.");
             return true;
         }
-        String dirName = args[1];
+        String arg1 = args[1];
 
-        if (fs.createDirectory(dirName)) {
-            sender.sendMessage("");
+        if (arg1.equals("--help") || arg1.equals("-h")) {
+            sender.sendMessage("Usage: mkdir DIRECTORY...");
+            sender.sendMessage("Create the DIRECTORY(ies), if they do not already exist.");
+            sender.sendMessage("Options:");
+            sender.sendMessage("-h, --help     display this help and exit");
+            return true;
         } else {
-            sender.sendMessage(LinuxifyMC.shellname + ": mkdir: Failed to create directory '" + dirName + "'");
+            if (fs.createDirectory(arg1, null, null)) {
+                // No Message
+            } else {
+                sender.sendMessage(LinuxifyMC.shellname + ": mkdir: Failed to create directory '" + arg1 + "'");
+            }
+            return true;
         }
-        return true;
     }
 }

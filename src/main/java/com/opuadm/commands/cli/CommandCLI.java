@@ -4,6 +4,7 @@ package com.opuadm.commands.cli;
 import com.opuadm.LinuxifyMC;
 
 import net.kyori.adventure.text.Component;
+
 import org.bukkit.Server;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -29,6 +30,7 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
             FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
 
             if (args.length == 0) {
+                assert fs != null;
                 String currentDir = fs.getCurrentDirectory();
                 String prompt = player.getName() + "@" + LinuxifyMC.hostname + ":" + currentDir + "$ ";
                 sender.sendMessage(prompt);
@@ -48,7 +50,7 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
         if (args.length == 0) return true;
 
         String currentDir = fs.getCurrentDirectory();
-        String prompt = player.getName() + "@" + LinuxifyMC.hostname + ":" + currentDir + "$ ";
+        String prompt = player.getName().toLowerCase() + "@" + LinuxifyMC.hostname + ":" + currentDir + "$ ";
         String fullCommand = String.join(" ", args);
 
         boolean isRedirection = false;
@@ -168,7 +170,8 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
         if (isRedirection) {
             String content = capturedOutput.toString();
             if (isAppending) fs.appendToFile(redirectFile, content);
-            else fs.createFile(redirectFile, content);
+            else
+                fs.createFile(redirectFile, content, player.getName(), player.getName(), "777", System.currentTimeMillis());
         }
 
         return success;
@@ -229,6 +232,8 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
                         StringUtil.copyPartialMatches(args[1], CommandVarsCLI.UnameOpts(), completions);
                     } else if (args[0].equalsIgnoreCase("chmod")) {
                         StringUtil.copyPartialMatches(args[1], CommandVarsCLI.ChmodPerms(), completions);
+                    } else if (args[0].equalsIgnoreCase("mkdir")) {
+                        StringUtil.copyPartialMatches(args[1], CommandVarsCLI.MkdirOpts(), completions);
                     }
                     break;
                 case 3:

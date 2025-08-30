@@ -1,0 +1,8 @@
+# TODO
+- Remade filesystem (machine.fs.FakeFS)
+- A custom logger (will store logs in files)
+- An API for the Filesystem
+- Machine one-and-off states
+- Login Manager + Su/Sudo Commands
+- Possibly a custom package manager (will be a part of non-linux-commands)
+- Some possible internet simulation

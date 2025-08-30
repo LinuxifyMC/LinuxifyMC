@@ -500,12 +500,15 @@ public class FakeFS {
 
                     NodeType type = NodeType.valueOf((String) nodeData.get("t"));
                     String owner = (String) nodeData.get("o");
+                    String group = (String) nodeData.get("g");
                     String permissions = (String) nodeData.get("p");
+                    // Extract the stored creation time
+                    long creationTime = ((Number) nodeData.get("ct")).longValue();
 
                     if (type == NodeType.FILE) {
-                        fs.createFile(path, (String) nodeData.get("c"), owner, permissions);
+                        fs.createFile(path, (String) nodeData.get("c"), owner, group, permissions, creationTime);
                     } else {
-                        fs.createDirectory(path, owner, permissions);
+                        fs.createDirectory(path, owner, group, permissions, creationTime);
                     }
                 }
             } finally { fs.fsLock.writeLock().unlock(); }
@@ -554,7 +557,7 @@ public class FakeFS {
     }
 
     // Create things (Dirs, Files, etc.)
-    public boolean createDirectory(String path, String owner, String permissions) {
+    public boolean createDirectory(String path, String owner, String group, String permissions, long creationTime) {
         Objects.requireNonNull(path, "Path cannot be null");
         fsLock.writeLock().lock();
         try {
@@ -562,7 +565,9 @@ public class FakeFS {
                     currentDirectory.equals("/") ? "/" + path : currentDirectory + "/" + path;
 
             String actualOwner = owner != null ? owner : username;
+            String actualGroup = group != null ? group : DEFAULT_GROUP;
             String actualPermissions = permissions != null ? permissions : "755";
+            long timestamp = creationTime > 0 ? creationTime : System.currentTimeMillis() / 1000;
 
             String[] parts = absolutePath.replaceAll("^/+", "").split("/");
             FSNode current = root;
@@ -571,8 +576,8 @@ public class FakeFS {
                 if (part.isEmpty()) continue;
                 final FSNode parent = current;
                 current.children.computeIfAbsent(part,
-                        k -> new FSNode(k, parent, actualOwner, DEFAULT_GROUP, NodeType.DIRECTORY,
-                                new ConcurrentHashMap<>(), null, System.currentTimeMillis() / 1000, actualPermissions));
+                        k -> new FSNode(k, parent, actualOwner, actualGroup, NodeType.DIRECTORY,
+                                new ConcurrentHashMap<>(), null, timestamp, actualPermissions));
                 current = current.children.get(part);
                 if (current.type != NodeType.DIRECTORY) return false;
             }
@@ -582,20 +587,22 @@ public class FakeFS {
         }
     }
 
-    public boolean createDirectory(String path) {
-        return createDirectory(path, null, null);
+    public boolean createDirectory(String path, String owner, String permissions) {
+        return createDirectory(path, owner, DEFAULT_GROUP, permissions, 0);
     }
 
-    public boolean createFile(String path, String content, String owner, String permissions) {
+    public boolean createFile(String path, String content, String owner, String group, String permissions, long creationTime) {
         Objects.requireNonNull(path, "Path cannot be null");
-        Objects.requireNonNull(content, "Content cannot be null");
+        if (content == null) content = "";
         fsLock.writeLock().lock();
         try {
             String absolutePath = path.startsWith("/") ? path :
                     currentDirectory.equals("/") ? "/" + path : currentDirectory + "/" + path;
 
             String actualOwner = owner != null ? owner : username;
+            String actualGroup = group != null ? group : DEFAULT_GROUP;
             String actualPermissions = permissions != null ? permissions : "644";
+            long timestamp = creationTime > 0 ? creationTime : System.currentTimeMillis() / 1000;
 
             int lastSlash = absolutePath.lastIndexOf('/');
             if (lastSlash == -1) return false;
@@ -605,9 +612,9 @@ public class FakeFS {
 
             FSNode parent = resolvePath(dirPath);
             if (parent == null || parent.type != NodeType.DIRECTORY) return false;
-            FSNode file = new FSNode(fileName, parent, actualOwner, DEFAULT_GROUP, NodeType.FILE,
+            FSNode file = new FSNode(fileName, parent, actualOwner, actualGroup, NodeType.FILE,
                     new HashMap<>(), content.getBytes(StandardCharsets.UTF_8),
-                    System.currentTimeMillis() / 1000, actualPermissions);
+                    timestamp, actualPermissions);
             parent.children.put(fileName, file);
             return true;
         } finally {
@@ -616,7 +623,7 @@ public class FakeFS {
     }
 
     public boolean createFile(String path, String content) {
-        return createFile(path, content, null, null);
+        return createFile(path, content, null, null, null, 0);
     }
 
     public boolean createEmptyFile(String path) {

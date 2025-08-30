@@ -19,6 +19,7 @@ import com.opuadm.LinuxifyMC;
 
 public class LinuxifyMCSettings implements CommandExecutor, TabCompleter {
     public static String perm1 = "linuxifymc.command.cli.nonlinuxcmds";
+    public static String perm2 = "linuxifymc.command.bootlogs.sendinchat";
 
     @Override
     public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
@@ -109,10 +110,14 @@ public class LinuxifyMCSettings implements CommandExecutor, TabCompleter {
 
                 if (settingName.equalsIgnoreCase("non-linux-commands")) {
                     boolean value = player.hasPermission(perm1);
-                    sender.sendMessage("Your setting non-linux-commands: " + value);
+                    sender.sendMessage("Your setting non-linux-commands value is currently set to " + value);
+                } else if (settingName.equalsIgnoreCase("boot-logs-in-chat")) {
+                    boolean value = player.hasPermission(perm2);
+                    sender.sendMessage("Your setting boot-logs-in-chat value is currently set to " + value);
                 } else {
                     sender.sendMessage("E: Unknown user setting: " + settingName);
                 }
+
                 return true;
             }
 
@@ -144,7 +149,26 @@ public class LinuxifyMCSettings implements CommandExecutor, TabCompleter {
                     PermissionAttachment attachment = player.addAttachment(JavaPlugin.getPlugin(LinuxifyMC.class));
                     attachment.setPermission(perm1, newValue);
 
-                    sender.sendMessage("Your non-linux-commands setting has been set to " + newValue);
+                    sender.sendMessage("Your non-linux-commands setting value has been set to " + newValue);
+                } else if (settingName.equalsIgnoreCase("boot-logs-in-chat")) {
+                    if (!settingValue.equalsIgnoreCase("true") && !settingValue.equalsIgnoreCase("false")) {
+                        sender.sendMessage("E: Invalid value for non-linux-commands. Use true or false.");
+                        return true;
+                    }
+
+                    boolean newValue = settingValue.equalsIgnoreCase("true");
+
+                    Permission permission = Bukkit.getPluginManager().getPermission(perm1);
+                    if (!noOverride && permission != null &&
+                            (permission.getDefault() == PermissionDefault.TRUE ||
+                                    permission.getDefault() == PermissionDefault.FALSE)) {
+                        sender.sendMessage("W: Note that global settings will override this user setting unless --no-override is used.");
+                    }
+
+                    PermissionAttachment attachment = player.addAttachment(JavaPlugin.getPlugin(LinuxifyMC.class));
+                    attachment.setPermission(perm1, newValue);
+
+                    sender.sendMessage("Your boot-logs-in-chat setting value has been set to " + newValue);
                 } else {
                     sender.sendMessage("E: Unknown user setting: " + settingName);
                 }
@@ -170,6 +194,7 @@ public class LinuxifyMCSettings implements CommandExecutor, TabCompleter {
             if ((args[0].equalsIgnoreCase("global") || args[0].equalsIgnoreCase("user")) &&
                     (args[1].equalsIgnoreCase("set") || args[1].equalsIgnoreCase("get"))) {
                 completions.add("non-linux-commands");
+                completions.add("boot-logs-in-chat");
             }
         } else if (args.length == 4) {
             if ((args[0].equalsIgnoreCase("global") || args[0].equalsIgnoreCase("user")) &&

@@ -12,3 +12,5 @@ This plugin does not mimic the Linux terminal perfectly, but it does give you an
 This plugin was tested only on Paper 1.21.4 for now, so using this plugin on older or newer versions may have bugs.
 
 More things to come in the future.
+
+![bStats](https://bstats.org/signatures/bukkit/LinuxifyMC.svg)

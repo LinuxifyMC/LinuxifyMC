@@ -1,5 +1,5 @@
 name: LinuxifyMC
-version: '0.1.0'
+version: '0.1.1'
 main: com.opuadm.LinuxifyMC
 api-version: '1.21'
 authors: [ OpuaYT ]
@@ -13,6 +13,9 @@ commands:
     description: Manages LinuxifyMC settings.
     usage: /<command> [global|user] [set] [setting] [value]
     permission: linuxifymc.command.settings
+  vcomputer:
+    description: Virtual Computer operations
+    usage: /<command> [start|stop]
 permissions:
     linuxifymc.command.cli:
         description: Allows the player to use the Linux terminal simulator
@@ -28,4 +31,7 @@ permissions:
         default: true
     linuxifymc.command.cli.nonlinuxcmds:
         description: Allows the player to use non-linux commands
+        default: true
+    linuxifymc.command.bootlogs.sendinchat:
+        description: Allows to send logs in the chat (to yourself only)
         default: true
