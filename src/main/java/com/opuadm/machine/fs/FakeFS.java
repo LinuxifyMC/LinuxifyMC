@@ -5,9 +5,11 @@ import org.bukkit.entity.Player;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.opuadm.Database;
+import org.jetbrains.annotations.Nullable;
 
 public class FakeFS {
     // Variables
@@ -26,53 +28,62 @@ public class FakeFS {
     private static final String defaultGroup = "users";
     private static final Logger logger = Logger.getLogger(FakeFS.class.getName());
 
-    private static String CurDir = null;
+    private final String CurDir;
 
-    private static String plr = null;
+    private final String plr;
 
     // Main Public for FakeFS
     public FakeFS(String playerName) {
-        plr = playerName;
-        CurDir = "/home/" + plr.toLowerCase();
+        this.plr = playerName;
+        this.CurDir = "/home/" + this.plr.toLowerCase();
     }
 
     // Generic / Misc
-    public static boolean saveFS(Player player, FakeFS fs) {
+    public static boolean saveFS(Player player, FakeFS fsInstance) {
         if (DB == null) {
             logger.warning("E: Database is not initialized.");
             return false;
         }
+        if (fsInstance == null) {
+            logger.warning("E: fsInstance is null.");
+            return false;
+        }
         try {
-            String sql = "INSERT INTO fs_saves (player_uuid, player_name, fs_version) VALUES (?, ?, ?) " +
-                         "ON DUPLICATE KEY UPDATE fs_version = ?";
-            String sql2 = "INSERT INTO fs_saves (player_uuid, player_name, disk_space_used, disk_space_free) VALUES (?, ?, ?, ?) " +
-                    "ON DUPLICATE KEY UPDATE disk_space_used = ?, disk_space_free = ?";
-            DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, FS_VER);
-            DB.query(sql2, player.getUniqueId().toString(), player.getName(), diskSpaceUsed, diskSpaceFree,
-                     diskSpaceUsed, diskSpaceFree);
+            String sql = "INSERT INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE player_name = VALUES(player_name), fs_version = VALUES(fs_version), disk_space_used = VALUES(disk_space_used), disk_space_free = VALUES(disk_space_free), current_dir = VALUES(current_dir)";
+            DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, diskSpaceUsed, diskSpaceFree, fsInstance.CurDir);
             return true;
         } catch (Exception e) {
-            logger.warning("E: An error occurred while saving the filesystem: " + e.getMessage());
+            logger.log(Level.WARNING, "E: An error occurred while saving the filesystem: " + e.getMessage(), e);
             return false;
         }
     }
 
-    public static void upgradeFS(FakeFS fs) {
+    public static void upgradeFS(FakeFS fsInstance) {
         if (DB == null) {
             logger.warning("E: Database is not initialized.");
             return;
         }
+        if (fsInstance == null) {
+            logger.warning("E: fsInstance is null.");
+            return;
+        }
         try {
-            String sql = "UPDATE fs_saves SET fs_version = ? WHERE fs_version < ?";
-            DB.query(sql, FS_VER, FS_VER);
-            logger.info("I: Filesystem upgraded to version " + FS_VER);
+            String sql = "UPDATE fs_saves SET fs_version = ? WHERE player_name = ? AND fs_version < ?";
+            DB.query(sql, FS_VER, fsInstance.plr, FS_VER);
+            logger.info("I: Filesystem for " + fsInstance.plr + " upgraded to version " + FS_VER);
         } catch (Exception e) {
-            logger.warning("E: An error occurred while upgrading the filesystem: " + e.getMessage());
+            logger.log(Level.WARNING, "E: An error occurred while upgrading the filesystem: " + e.getMessage(), e);
         }
     }
 
+
     // Setup
     public static void setupSysFiles() {
+        if (fs == null) {
+            logger.warning("E: Filesystem instance is not initialized.");
+            return;
+        }
         // System Directories (From root directory)
         fs.makeDir("/sys", "root", "755");
         fs.makeDir("/dev", "root", "755");
@@ -94,7 +105,7 @@ public class FakeFS {
         // /var Directories
         fs.makeDir("/var/log", "root", "755");
         // Player Home Directory
-        fs.makeDir("/home/" + plr.toLowerCase(), plr.toLowerCase(), "777");
+        fs.makeDir("/home/" + fs.plr.toLowerCase(), fs.plr.toLowerCase(), "777");
     }
 
     // Player Filesystem
@@ -105,6 +116,9 @@ public class FakeFS {
             logger.warning("E: Database is not initialized.");
             return null;
         }
+        if (fs == null || !username.equalsIgnoreCase(fs.plr)) {
+            fs = new FakeFS(username);
+        }
         return fs;
     }
 
@@ -114,23 +128,24 @@ public class FakeFS {
             if (path == null || path.isEmpty()) {
                 return null;
             }
-            path = path.replace("/+", "/");
+            path = path.replaceAll("/+", "/");
+            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
             String sql = "SELECT * FROM fs_dirs WHERE path = ?";
 
             var result = DB.query(sql, path);
-            if (result.isEmpty()) {
+            if (result == null || result.isEmpty()) {
                 logger.warning("E: Directory not found: " + path);
                 return null;
             }
         } catch (Exception e) {
-            logger.warning("E: An error occurred while retrieving the directory: " + e.getMessage());
+            logger.log(Level.WARNING, "E: An error occurred while retrieving the directory: " + e.getMessage(), e);
             return null;
         }
         return path;
     }
 
-    public static void setFs(FakeFS fs) {
-        FakeFS.fs = fs;
+    public static void setFs(FakeFS fsInstance) {
+        FakeFS.fs = fsInstance;
     }
 
     public String getCurrentDir() {
@@ -140,25 +155,11 @@ public class FakeFS {
     // Make (Directories, Files, etc.)
     public void makeDir(String path, String owner, String perms) {
         try {
-            if (path == null || path.isEmpty()) return;
-
-            path = path.replace("/+", "/");
-
-            String parentDir = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
-
-            if (!parentDir.isEmpty()) {
-                var parentResult = DB.query("SELECT owner, permissions FROM fs_dirs WHERE path = ?", parentDir);
-
-                if (parentResult.isEmpty()) return;
-
-                var parentInfo = (java.util.Map<?,?>) parentResult.getFirst();
-                String parentOwner = (String) parentInfo.get("owner");
-                String parentPerms = (String) parentInfo.get("permissions");
-
-                if (hasPermissions(parentPerms, "w")) return;
-            }
+            path = getString(path);
+            if (path == null) return;
 
             var countResult = DB.query("SELECT COUNT(*) AS cnt FROM fs_dirs WHERE path = ?", path);
+            if (countResult == null || countResult.isEmpty()) return;
             var countInfo = (java.util.Map<?,?>) countResult.getFirst();
             long dirCount = ((Number) countInfo.get("cnt")).longValue();
 
@@ -167,32 +168,19 @@ public class FakeFS {
             DB.query("INSERT INTO fs_dirs (path, owner, group_name, permissions) VALUES (?, ?, ?, ?)", path, owner, defaultGroup, perms);
 
             changePermissions(path, perms);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: An error occurred while creating directory: " + e.getMessage(), e);
+        }
     }
 
     public void makeFile(String path, String owner, String perms, String content) {
         try {
-            if (path == null || path.isEmpty()) return;
+            path = getString(path);
 
-            path = path.replace("/+", "/");
-
-            String parentDir = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
-
-            if (!parentDir.isEmpty()) {
-                var parentResult = DB.query("SELECT owner, permissions FROM fs_dirs WHERE path = ?", parentDir);
-
-                if (parentResult.isEmpty()) return;
-
-                var parentInfo = (java.util.Map<?,?>) parentResult.getFirst();
-                String parentOwner = (String) parentInfo.get("owner");
-                String parentPerms = (String) parentInfo.get("permissions");
-
-                if (hasPermissions(parentPerms, "w")) return;
-            }
-
-            if (content.length() > diskSpaceFree) return;
+            if (content != null && content.length() > diskSpaceFree) return;
 
             var countResult = DB.query("SELECT COUNT(*) AS cnt FROM fs_files WHERE path = ?", path);
+            if (countResult == null || countResult.isEmpty()) return;
             var countInfo = (java.util.Map<?,?>) countResult.getFirst();
             long fileCount = ((Number) countInfo.get("cnt")).longValue();
             if (fileCount > 0) return;
@@ -200,9 +188,16 @@ public class FakeFS {
             DB.query("INSERT INTO fs_files (path, owner, group_name, permissions, content) VALUES (?, ?, ?, ?, ?)", path, owner, defaultGroup, perms, content);
 
             changePermissions(path, perms);
-        } catch (Exception ignored) {}
+            if (content != null) {
+                diskSpaceUsedByUserFiles += content.length();
+                totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
+                diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: An error occurred while creating file: " + e.getMessage(), e);
+        }
     }
-    
+
     // Write (For files only)
     public void writeFile(String path, String content) {
         try {
@@ -211,15 +206,27 @@ public class FakeFS {
                 return;
             }
 
-            path = path.replace("/+", "/");
+            path = path.replaceAll("/+", "/");
 
             String sql = "UPDATE fs_files SET content = ? WHERE path = ?";
-            long rowsAffected = ((Number) DB.query(sql, content, path).getFirst().getFirst()).longValue();
+            var res = DB.query(sql, content, path);
+            long rowsAffected = 0;
+            if (res != null && !res.isEmpty()) {
+                var first = res.getFirst();
+                if (first != null && !first.isEmpty()) {
+                    Object val = first.getFirst();
+                    if (val instanceof Number) rowsAffected = ((Number) val).longValue();
+                }
+            }
             if (rowsAffected == 0) {
                 logger.warning("E: File not found or could not be updated: " + path);
+            } else {
+                diskSpaceUsedByUserFiles += (content != null ? content.length() : 0);
+                totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
+                diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
             }
         } catch (Exception e) {
-            logger.warning("E: An error occurred while writing to the file: " + e.getMessage());
+            logger.log(Level.WARNING, "E: An error occurred while writing to the file: " + e.getMessage(), e);
         }
     }
 
@@ -230,15 +237,29 @@ public class FakeFS {
                 return;
             }
 
-            path = path.replace("/+", "/");
+            path = path.replaceAll("/+", "/");
 
             String sql = "UPDATE fs_files SET content = CONCAT(content, ?) WHERE path = ?";
-            long rowsAffected = ((Number) DB.query(sql, content, path).getFirst().getFirst()).longValue();
+            var res = DB.query(sql, content, path);
+            long rowsAffected = 0;
+            if (res != null && !res.isEmpty()) {
+                var first = res.getFirst();
+                if (first != null && !first.isEmpty()) {
+                    Object val = first.getFirst();
+                    if (val instanceof Number) rowsAffected = ((Number) val).longValue();
+                }
+            }
             if (rowsAffected == 0) {
                 logger.warning("E: File not found or could not be updated: " + path);
+            } else {
+                if (content != null) {
+                    diskSpaceUsedByUserFiles += content.length();
+                    totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
+                    diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
+                }
             }
         } catch (Exception e) {
-            logger.warning("E: An error occurred while appending to the file: " + e.getMessage());
+            logger.log(Level.WARNING, "E: An error occurred while appending to the file: " + e.getMessage(), e);
         }
     }
 
@@ -247,11 +268,14 @@ public class FakeFS {
         if (plr == null) {
             return true;
         }
-        char permChar = perms.charAt(0);
-        return !switch (requiredPerm) {
-            case "r" -> (permChar - '0' & 4) != 0;
-            case "w" -> (permChar - '0' & 2) != 0;
-            case "x" -> (permChar - '0' & 1) != 0;
+        if (perms == null || perms.length() != 3) return false;
+        int index = 0; // owner by default
+        char permChar = perms.charAt(index);
+        int digit = permChar - '0';
+        return switch (requiredPerm) {
+            case "r" -> (digit & 4) != 0;
+            case "w" -> (digit & 2) != 0;
+            case "x" -> (digit & 1) != 0;
             default -> false;
         };
     }
@@ -262,15 +286,25 @@ public class FakeFS {
                 logger.warning("E: Path cannot be null or empty, or new permissions cannot be null or invalid.");
                 return;
             }
-            path = path.replace("/+", "/");
+            path = path.replaceAll("/+", "/");
 
             String symbolicPerms = ConvertPerms.octalToSymbolic(newPerms);
 
             String dirSql = "SELECT COUNT(*) FROM fs_dirs WHERE path = ?";
-            long dirCount = ((Number) DB.query(dirSql, path).getFirst().getFirst()).longValue();
+            long dirCount = 0;
+            var dirRes = DB.query(dirSql, path);
+            if (dirRes != null && !dirRes.isEmpty()) {
+                var val = dirRes.getFirst().getFirst();
+                if (val instanceof Number) dirCount = ((Number) val).longValue();
+            }
 
             String fileSql = "SELECT COUNT(*) FROM fs_files WHERE path = ?";
-            long fileCount = ((Number) DB.query(fileSql, path).getFirst().getFirst()).longValue();
+            long fileCount = 0;
+            var fileRes = DB.query(fileSql, path);
+            if (fileRes != null && !fileRes.isEmpty()) {
+                var val = fileRes.getFirst().getFirst();
+                if (val instanceof Number) fileCount = ((Number) val).longValue();
+            }
 
             if (dirCount > 0) {
                 String updateDirSql = "UPDATE fs_dirs SET permissions = ? WHERE path = ?";
@@ -284,7 +318,31 @@ public class FakeFS {
                 logger.warning("E: Path not found: " + path);
             }
         } catch (Exception e) {
-            logger.warning("E: An error occurred while changing permissions: " + e.getMessage());
+            logger.log(Level.WARNING, "E: An error occurred while changing permissions: " + e.getMessage(), e);
         }
+    }
+
+    // Other
+    @Nullable
+    private String getString(String path) {
+        if (path == null || path.isEmpty()) return null;
+
+        path = path.replaceAll("/+", "/");
+        if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+
+        String parentDir = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
+        if (parentDir.isEmpty() && path.startsWith("/")) parentDir = "/";
+
+        if (!parentDir.isEmpty()) {
+            var parentResult = DB.query("SELECT owner, permissions FROM fs_dirs WHERE path = ?", parentDir);
+
+            if (parentResult == null || parentResult.isEmpty()) return null;
+
+            var parentInfo = (java.util.Map<?,?>) parentResult.getFirst();
+            String parentPerms = (String) parentInfo.get("permissions");
+
+            if (!hasPermissions(parentPerms, "w")) return null;
+        }
+        return path;
     }
 }

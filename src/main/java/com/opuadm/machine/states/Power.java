@@ -1,8 +1,11 @@
 package com.opuadm.machine.states;
 
+import org.bukkit.entity.Player;
+
 import java.io.Serializable;
 
 public class Power {
+    private Player plr;
     private boolean isOn = false;
     private boolean isOff = true;
     private boolean isBooting = false;
@@ -27,6 +30,7 @@ public class Power {
         } else {
             isOff = false;
             isBooting = true;
+            Boot.Init(plr);
         }
         return 0;
     }
