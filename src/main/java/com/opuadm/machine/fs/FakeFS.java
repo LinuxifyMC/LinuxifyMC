@@ -1,14 +1,16 @@
 // Remade FakeFS
 package com.opuadm.machine.fs;
 
+import com.opuadm.Database;
+
 import org.bukkit.entity.Player;
 
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.opuadm.Database;
 import org.jetbrains.annotations.Nullable;
 
 public class FakeFS {
@@ -28,6 +30,9 @@ public class FakeFS {
     private static final String defaultGroup = "users";
     private static final Logger logger = Logger.getLogger(FakeFS.class.getName());
 
+    private static final ConcurrentHashMap<UUID, FakeFS> PLAYER_FS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, FakeFS> NAME_FS = new ConcurrentHashMap<>();
+
     private final String CurDir;
 
     private final String plr;
@@ -39,7 +44,7 @@ public class FakeFS {
     }
 
     // Generic / Misc
-    public static boolean saveFS(Player player, FakeFS fsInstance) {
+    public boolean saveFS(Player player, FakeFS fsInstance) {
         if (DB == null) {
             logger.warning("E: Database is not initialized.");
             return false;
@@ -59,7 +64,7 @@ public class FakeFS {
         }
     }
 
-    public static void upgradeFS(FakeFS fsInstance) {
+    public void upgradeFS(FakeFS fsInstance) {
         if (DB == null) {
             logger.warning("E: Database is not initialized.");
             return;
@@ -79,34 +84,31 @@ public class FakeFS {
 
 
     // Setup
-    public static void setupSysFiles() {
-        if (fs == null) {
-            logger.warning("E: Filesystem instance is not initialized.");
-            return;
-        }
+    public void setupSysFiles() {
         // System Directories (From root directory)
-        fs.makeDir("/sys", "root", "755");
-        fs.makeDir("/dev", "root", "755");
-        fs.makeDir("/etc", "root", "755");
-        fs.makeDir("/boot", "root", "755");
-        fs.makeDir("/proc", "root", "755");
-        fs.makeDir("/root", "root", "755");
-        fs.makeDir("/usr", "root", "755");
-        fs.makeDir("/home", "root", "755");
-        fs.makeDir("/tmp", "root", "755");
-        fs.makeDir("/var", "root", "755");
-        fs.makeDir("/opt", "root", "755");
+        this.makeDir("/sys", "root", "755");
+        this.makeDir("/dev", "root", "755");
+        this.makeDir("/etc", "root", "755");
+        this.makeDir("/boot", "root", "755");
+        this.makeDir("/proc", "root", "755");
+        this.makeDir("/root", "root", "755");
+        this.makeDir("/usr", "root", "755");
+        this.makeDir("/home", "root", "755");
+        this.makeDir("/tmp", "root", "755");
+        this.makeDir("/var", "root", "755");
+        this.makeDir("/opt", "root", "755");
         // System Directories (From /usr directory)
-        fs.makeDir("/usr/bin", "root", "755");
-        fs.makeDir("/usr/sbin", "root", "755");
-        fs.makeDir("/usr/lib", "root", "755");
-        fs.makeDir("/usr/lib64", "root", "755");
-        fs.makeDir("/usr/local", "root", "755");
+        this.makeDir("/usr/bin", "root", "755");
+        this.makeDir("/usr/sbin", "root", "755");
+        this.makeDir("/usr/lib", "root", "755");
+        this.makeDir("/usr/lib64", "root", "755");
+        this.makeDir("/usr/local", "root", "755");
         // /var Directories
-        fs.makeDir("/var/log", "root", "755");
+        this.makeDir("/var/log", "root", "755");
         // Player Home Directory
-        fs.makeDir("/home/" + fs.plr.toLowerCase(), fs.plr.toLowerCase(), "777");
+        this.makeDir("/home/" + this.plr.toLowerCase(), this.plr.toLowerCase(), "777");
     }
+
 
     // Player Filesystem
     public static FakeFS getPlayerFS(UUID plrUUID, String username) {
@@ -116,40 +118,8 @@ public class FakeFS {
             logger.warning("E: Database is not initialized.");
             return null;
         }
-        if (fs == null || !username.equalsIgnoreCase(fs.plr)) {
-            fs = new FakeFS(username);
-        }
-        return fs;
-    }
-
-    // Get (Directories, Files, etc.)
-    public static String getDir(String path) {
-        try {
-            if (path == null || path.isEmpty()) {
-                return null;
-            }
-            path = path.replaceAll("/+", "/");
-            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
-            String sql = "SELECT * FROM fs_dirs WHERE path = ?";
-
-            var result = DB.query(sql, path);
-            if (result == null || result.isEmpty()) {
-                logger.warning("E: Directory not found: " + path);
-                return null;
-            }
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "E: An error occurred while retrieving the directory: " + e.getMessage(), e);
-            return null;
-        }
-        return path;
-    }
-
-    public static void setFs(FakeFS fsInstance) {
-        FakeFS.fs = fsInstance;
-    }
-
-    public String getCurrentDir() {
-        return CurDir;
+        return PLAYER_FS.compute(plrUUID, (id, existing) ->
+                existing == null || !existing.plr.equalsIgnoreCase(username) ? new FakeFS(username) : existing);
     }
 
     // Make (Directories, Files, etc.)
@@ -195,6 +165,45 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while creating file: " + e.getMessage(), e);
+        }
+    }
+
+    // Get (Directories, Files, etc.)
+    public String getDir(String path) {
+        try {
+            if (path == null || path.isEmpty()) {
+                return null;
+            }
+            path = path.replaceAll("/+", "/");
+            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+            String sql = "SELECT * FROM fs_dirs WHERE path = ?";
+
+            var result = DB.query(sql, path);
+            if (result == null || result.isEmpty()) {
+                logger.warning("E: Directory not found: " + path);
+                return null;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: An error occurred while retrieving the directory: " + e.getMessage(), e);
+            return null;
+        }
+        return path;
+    }
+
+    public String getFile(String path) {
+        try {
+            if (path == null || path.isEmpty()) return null;
+            path = path.replaceAll("/+", "/");
+            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+            String sql = "SELECT content FROM fs_files WHERE path = ?";
+            var result = DB.query(sql, path);
+            if (result == null || result.isEmpty()) return null;
+            var row = (java.util.Map<?,?>) result.getFirst();
+            Object content = row.get("content");
+            return content != null ? content.toString() : null;
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: An error occurred while reading file: " + e.getMessage(), e);
+            return null;
         }
     }
 
@@ -322,7 +331,7 @@ public class FakeFS {
         }
     }
 
-    // Other
+    // Other / Uncategorized
     @Nullable
     private String getString(String path) {
         if (path == null || path.isEmpty()) return null;
@@ -344,5 +353,14 @@ public class FakeFS {
             if (!hasPermissions(parentPerms, "w")) return null;
         }
         return path;
+    }
+
+    public static void setFs(FakeFS fsInstance) {
+        if (fsInstance == null) return;
+        fsInstance.getCurrentDir();
+    }
+
+    public String getCurrentDir() {
+        return CurDir;
     }
 }
