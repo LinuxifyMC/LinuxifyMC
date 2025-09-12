@@ -15,23 +15,20 @@ import org.jetbrains.annotations.Nullable;
 
 public class FakeFS {
     // Variables
-    private static FakeFS fs;
-
     public static String FS_VER = "0.1.1";
 
     public static Database DB;
 
-    public static long maxDiskSpace = 768L * ConvertUnits.GB; // 768GB Disk Space Available
-    public static long diskSpaceUsed = 1722 * ConvertUnits.MB; // "1.722GB" Disk Space Used (As default with only system files)
-    public static long diskSpaceUsedByUserFiles = 0L; // 0 Bytes by default
-    public static long totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
-    public static long diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed; // Free Disk Space
+    private final long maxDiskSpace = 768L * ConvertUnits.GB; // 768GB Disk Space Available
+    private long diskSpaceUsed = 1722 * ConvertUnits.MB; // "1.722GB" Disk Space Used (As default with only system files)
+    private long diskSpaceUsedByUserFiles = 0L; // 0 Bytes by default
+    private long totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
+    private long diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed; // Free Disk Space
 
     private static final String defaultGroup = "users";
     private static final Logger logger = Logger.getLogger(FakeFS.class.getName());
 
     private static final ConcurrentHashMap<UUID, FakeFS> PLAYER_FS = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, FakeFS> NAME_FS = new ConcurrentHashMap<>();
 
     private final String CurDir;
 
@@ -56,7 +53,9 @@ public class FakeFS {
         try {
             String sql = "INSERT INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?) " +
                     "ON DUPLICATE KEY UPDATE player_name = VALUES(player_name), fs_version = VALUES(fs_version), disk_space_used = VALUES(disk_space_used), disk_space_free = VALUES(disk_space_free), current_dir = VALUES(current_dir)";
-            DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, diskSpaceUsed, diskSpaceFree, fsInstance.CurDir);
+            long totalUsed = fsInstance.diskSpaceUsed + fsInstance.diskSpaceUsedByUserFiles;
+            long free = fsInstance.maxDiskSpace - totalUsed;
+            DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, totalUsed, free, fsInstance.CurDir);
             return true;
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while saving the filesystem: " + e.getMessage(), e);
@@ -84,7 +83,7 @@ public class FakeFS {
 
 
     // Setup
-    public void setupSysFiles() {
+    public synchronized void setupSysFiles() {
         // System Directories (From root directory)
         this.makeDir("/sys", "root", "755");
         this.makeDir("/dev", "root", "755");
@@ -123,7 +122,7 @@ public class FakeFS {
     }
 
     // Make (Directories, Files, etc.)
-    public void makeDir(String path, String owner, String perms) {
+    public synchronized void makeDir(String path, String owner, String perms) {
         try {
             path = getString(path);
             if (path == null) return;
@@ -143,9 +142,10 @@ public class FakeFS {
         }
     }
 
-    public void makeFile(String path, String owner, String perms, String content) {
+    public synchronized void makeFile(String path, String owner, String perms, String content) {
         try {
             path = getString(path);
+            if (path == null) return;
 
             if (content != null && content.length() > diskSpaceFree) return;
 
@@ -208,7 +208,7 @@ public class FakeFS {
     }
 
     // Write (For files only)
-    public void writeFile(String path, String content) {
+    public synchronized void writeFile(String path, String content) {
         try {
             if (path == null || path.isEmpty()) {
                 logger.warning("E: Path cannot be null or empty.");
@@ -217,19 +217,11 @@ public class FakeFS {
 
             path = path.replaceAll("/+", "/");
 
-            String sql = "UPDATE fs_files SET content = ? WHERE path = ?";
-            var res = DB.query(sql, content, path);
-            long rowsAffected = 0;
-            if (res != null && !res.isEmpty()) {
-                var first = res.getFirst();
-                if (first != null && !first.isEmpty()) {
-                    Object val = first.getFirst();
-                    if (val instanceof Number) rowsAffected = ((Number) val).longValue();
-                }
-            }
-            if (rowsAffected == 0) {
+            var exists = DB.query("SELECT COUNT(*) AS cnt FROM fs_files WHERE path = ?", path);
+            if (exists == null || exists.isEmpty() || ((Number)((java.util.Map<?,?>) exists.getFirst()).get("cnt")).longValue() == 0L) {
                 logger.warning("E: File not found or could not be updated: " + path);
             } else {
+                DB.query("UPDATE fs_files SET content = ? WHERE path = ?", content, path);
                 diskSpaceUsedByUserFiles += (content != null ? content.length() : 0);
                 totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
                 diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
@@ -239,7 +231,7 @@ public class FakeFS {
         }
     }
 
-    public void appendFile(String path, String content) {
+    public synchronized void appendFile(String path, String content) {
         try {
             if (path == null || path.isEmpty()) {
                 logger.warning("E: Path cannot be null or empty.");
@@ -248,17 +240,8 @@ public class FakeFS {
 
             path = path.replaceAll("/+", "/");
 
-            String sql = "UPDATE fs_files SET content = CONCAT(content, ?) WHERE path = ?";
-            var res = DB.query(sql, content, path);
-            long rowsAffected = 0;
-            if (res != null && !res.isEmpty()) {
-                var first = res.getFirst();
-                if (first != null && !first.isEmpty()) {
-                    Object val = first.getFirst();
-                    if (val instanceof Number) rowsAffected = ((Number) val).longValue();
-                }
-            }
-            if (rowsAffected == 0) {
+            var exists = DB.query("SELECT COUNT(*) AS cnt FROM fs_files WHERE path = ?", path);
+            if (exists == null || exists.isEmpty() || ((Number)((java.util.Map<?,?>) exists.getFirst()).get("cnt")).longValue() == 0L) {
                 logger.warning("E: File not found or could not be updated: " + path);
             } else {
                 if (content != null) {
@@ -266,6 +249,13 @@ public class FakeFS {
                     totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
                     diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
                 }
+                DB.query("UPDATE fs_files SET content = CONCAT(content, ?) WHERE path = ?", content, path);
+                if (content != null) {
+                    diskSpaceUsedByUserFiles += content.length();
+                    totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
+                    diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
+                }
+
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while appending to the file: " + e.getMessage(), e);
@@ -273,21 +263,23 @@ public class FakeFS {
     }
 
     // Permissions
-    public boolean hasPermissions(String perms, String requiredPerm) {
-        if (plr == null) {
-            return true;
-        }
+    public boolean hasPermissions(String perms, String owner, String group, String subject, String requiredPerm) {
         if (perms == null || perms.length() != 3) return false;
-        int index = 0; // owner by default
-        char permChar = perms.charAt(index);
-        int digit = permChar - '0';
+        int idx = 2;
+        if (subject != null && subject.equalsIgnoreCase(owner)) {
+            idx = 0;
+        } else if (group != null && !group.isEmpty()) {
+            idx = 1;
+        }
+        int digit = perms.charAt(idx) - '0';
         return switch (requiredPerm) {
             case "r" -> (digit & 4) != 0;
             case "w" -> (digit & 2) != 0;
             case "x" -> (digit & 1) != 0;
             default -> false;
-        };
-    }
+            };
+        }
+
 
     public void changePermissions(String path, String newPerms) {
         try {
@@ -343,21 +335,18 @@ public class FakeFS {
         if (parentDir.isEmpty() && path.startsWith("/")) parentDir = "/";
 
         if (!parentDir.isEmpty()) {
-            var parentResult = DB.query("SELECT owner, permissions FROM fs_dirs WHERE path = ?", parentDir);
+            var parentResult = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE path = ?", parentDir);
 
             if (parentResult == null || parentResult.isEmpty()) return null;
 
             var parentInfo = (java.util.Map<?,?>) parentResult.getFirst();
+            String parentOwner = (String) parentInfo.get("owner");
+            String parentGroup = (String) parentInfo.get("group_name");
             String parentPerms = (String) parentInfo.get("permissions");
 
-            if (!hasPermissions(parentPerms, "w")) return null;
+            if (!hasPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")) return null;
         }
         return path;
-    }
-
-    public static void setFs(FakeFS fsInstance) {
-        if (fsInstance == null) return;
-        fsInstance.getCurrentDir();
     }
 
     public String getCurrentDir() {
