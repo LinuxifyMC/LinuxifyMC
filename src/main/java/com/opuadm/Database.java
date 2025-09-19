@@ -1,197 +1,139 @@
-// those who database
 package com.opuadm;
 
 import org.bukkit.entity.Player;
-
 import java.io.File;
 import java.sql.*;
-import java.util.UUID;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
+import java.util.logging.Level;
 
+@SuppressWarnings("SqlSourceToSinkFlow")
 public class Database {
     private final LinuxifyMC plugin;
-    public Connection connection;
-    private static final String CREATE_TABLE_SQL =
+    private Connection connection;
+
+    private static final String CREATE_PLAYER_TABLE =
             "CREATE TABLE IF NOT EXISTS player_data (" +
                     "uuid TEXT PRIMARY KEY, " +
                     "username TEXT NOT NULL, " +
                     "fs_data TEXT, " +
                     "last_updated INTEGER)";
 
-    private static final String SQL_SELECT_ALL = "SELECT * FROM player_data";
-    private static final String SQL_SELECT_BY_UUID = "SELECT * FROM player_data WHERE uuid = ?";
-    private static final String SQL_SELECT_BY_NAME = "SELECT * FROM player_data WHERE username = ?";
-    private static final String SQL_SELECT_FS_DATA = "SELECT fs_data FROM player_data WHERE uuid = ?";
-
     public Database(LinuxifyMC plugin) {
         this.plugin = plugin;
         initializeDatabase();
     }
 
-    public List<List<Object>> query(String type, Object... params) {
-        String sql;
-        switch (type) {
-            case "SELECT_ALL":
-                sql = SQL_SELECT_ALL;
-                break;
-            case "SELECT_BY_UUID":
-                sql = SQL_SELECT_BY_UUID;
-                break;
-            case "SELECT_BY_NAME":
-                sql = SQL_SELECT_BY_NAME;
-                break;
-            case "SELECT_FS_DATA":
-                sql = SQL_SELECT_FS_DATA;
-                break;
-            default:
-                plugin.getLogger().severe("Unknown query type: " + type);
-                return Collections.emptyList();
-        }
-
-        try {
-            if (connection == null || connection.isClosed()) {
-                initializeDatabase();
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("DB init failed: " + e.getMessage());
-            return Collections.emptyList();
-        }
-
-        List<List<Object>> results = new ArrayList<>();
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            for (int i = 0; i < params.length; i++) {
-                stmt.setObject(i + 1, params[i]);
-            }
-            try (ResultSet rs = stmt.executeQuery()) {
-                ResultSetMetaData meta = rs.getMetaData();
-                int cols = meta.getColumnCount();
-                while (rs.next()) {
-                    List<Object> row = new ArrayList<>(cols);
-                    for (int i = 1; i <= cols; i++) {
-                        row.add(rs.getObject(i));
-                    }
-                    results.add(row);
-                }
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Query execution failed: " + e.getMessage());
-        }
-        return results;
-    }
-
     private void initializeDatabase() {
         try {
             File dataFolder = plugin.getDataFolder();
-            if (!dataFolder.exists()) {
-                if (!dataFolder.mkdirs()) {
-                    plugin.getLogger().severe("Could not create plugin directory: " + dataFolder.getAbsolutePath());
-                    return;
-                }
+            if (!dataFolder.exists() && !dataFolder.mkdirs()) {
+                throw new RuntimeException("Could not create plugin directory");
             }
 
-            String dbFileName = plugin.getConfig().getString("database.filename", "linuxifymc.db");
-            File dbFile = new File(dataFolder, dbFileName);
-            String dbPath = dbFile.getAbsolutePath();
+            String dbPath = new File(dataFolder,
+                    plugin.getConfig().getString("database.filename", "linuxifymc.db")).getAbsolutePath();
 
-            plugin.getLogger().info("Using SQLite database at: " + dbPath);
+            connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 
-            Class.forName("org.sqlite.JDBC");
-
-            String url = "jdbc:sqlite:" + dbPath;
-            connection = DriverManager.getConnection(url);
-
+            // SQLite optimizations
             try (Statement stmt = connection.createStatement()) {
-                String journalMode = plugin.getConfig().getString("database.journal_mode", "WAL");
-                int synchronous = plugin.getConfig().getInt("database.synchronous", 1);
-                int autoVacuum = plugin.getConfig().getInt("database.auto_vacuum", 1);
-                int timeout = plugin.getConfig().getInt("database.timeout", 30) * 1000;
-
-                stmt.execute("PRAGMA journal_mode = " + journalMode);
-                stmt.execute("PRAGMA synchronous = " + synchronous);
-                stmt.execute("PRAGMA auto_vacuum = " + autoVacuum);
-                stmt.execute("PRAGMA busy_timeout = " + timeout);
+                stmt.executeUpdate("PRAGMA journal_mode=WAL");
+                stmt.executeUpdate("PRAGMA synchronous=NORMAL");
+                stmt.executeUpdate("PRAGMA cache_size=10000");
+                stmt.executeUpdate("PRAGMA temp_store=memory");
+                stmt.executeUpdate(CREATE_PLAYER_TABLE);
             }
 
-            plugin.getLogger().info("SQLite database file created at: " + dbPath);
+            plugin.getLogger().info("Database initialized at: " + dbPath);
 
-            createTables();
-
-        } catch (SQLException | ClassNotFoundException e) {
-            plugin.getLogger().severe("Database initialization failed: " + e.getMessage());
-            for (StackTraceElement ste : e.getStackTrace()) {
-                plugin.getLogger().severe(ste.toString());
-            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Database initialization failed", e);
+            throw new RuntimeException("Database setup failed", e);
         }
     }
 
-    private void createTables() throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.execute(CREATE_TABLE_SQL);
-            plugin.getLogger().info("Database tables created successfully");
+    public List<List<Object>> query(String sql, Object... params) {
+        List<List<Object>> results = new ArrayList<>();
+
+        try {
+            ensureConnection();
+
+            if (sql.trim().toUpperCase().startsWith("SELECT")) {
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    setParameters(stmt, params);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        results = resultSetToList(rs);
+                    }
+                }
+            } else {
+                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                    setParameters(stmt, params);
+                    stmt.executeUpdate();
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Query failed: " + sql, e);
         }
+
+        return results;
     }
 
     public void saveData(Player player, String fsData) {
-        try {
-            if (connection == null || connection.isClosed()) {
-                initializeDatabase();
-            }
-
-            String sql = "INSERT OR REPLACE INTO player_data (uuid, username, fs_data, last_updated) VALUES (?, ?, ?, ?)";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, player.getUniqueId().toString());
-                stmt.setString(2, player.getName());
-                stmt.setString(3, fsData);
-                stmt.setLong(4, System.currentTimeMillis());
-                int rowsAffected = stmt.executeUpdate();
-                plugin.getLogger().info("Saved data for player " + player.getName() + " (" + rowsAffected + " rows affected)");
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Could not save data for player " + player.getName() + ": " + e.getMessage());
-            for (StackTraceElement ste : e.getStackTrace()) {
-                plugin.getLogger().severe(ste.toString());
-            }
-        }
+        query("INSERT OR REPLACE INTO player_data (uuid, username, fs_data, last_updated) VALUES (?, ?, ?, ?)",
+                player.getUniqueId().toString(), player.getName(), fsData, System.currentTimeMillis());
     }
 
     public String loadFSData(UUID playerUUID) {
-        try {
-            if (connection == null || connection.isClosed()) {
-                initializeDatabase();
-            }
+        List<List<Object>> results = query("SELECT fs_data FROM player_data WHERE uuid = ?",
+                playerUUID.toString());
 
-            String sql = "SELECT fs_data FROM player_data WHERE uuid = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, playerUUID.toString());
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) {
-                        String data = rs.getString("fs_data");
-                        plugin.getLogger().info("Loaded data for UUID: " + playerUUID);
-                        return data;
-                    } else {
-                        plugin.getLogger().info("No data found for UUID: " + playerUUID);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Could not load data for UUID " + playerUUID + ": " + e.getMessage());
-            for (StackTraceElement ste : e.getStackTrace()) {
-                plugin.getLogger().severe(ste.toString());
-            }
+        if (!results.isEmpty() && !results.getFirst().isEmpty()) {
+            Object data = results.getFirst().getFirst();
+            return data != null ? data.toString() : null;
         }
         return null;
     }
 
+    private void ensureConnection() throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            initializeDatabase();
+        }
+    }
+
+    private void setParameters(PreparedStatement stmt, Object... params) throws SQLException {
+        for (int i = 0; i < params.length; i++) {
+            stmt.setObject(i + 1, params[i]);
+        }
+    }
+
+    private List<List<Object>> resultSetToList(ResultSet rs) throws SQLException {
+        List<List<Object>> results = new ArrayList<>();
+        ResultSetMetaData meta = rs.getMetaData();
+        int cols = meta.getColumnCount();
+
+        while (rs.next()) {
+            List<Object> row = new ArrayList<>(cols);
+            for (int i = 1; i <= cols; i++) {
+                row.add(rs.getObject(i));
+            }
+            results.add(row);
+        }
+        return results;
+    }
+
     public void close() {
-        try {
-            if (connection != null && !connection.isClosed()) {
+        if (connection != null) {
+            try {
                 connection.close();
                 plugin.getLogger().info("Database connection closed");
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.WARNING, "Error closing database", e);
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Could not close database: " + e.getMessage());
         }
+    }
+
+    public Connection getConnection() throws SQLException {
+        ensureConnection();
+        return connection;
     }
 }

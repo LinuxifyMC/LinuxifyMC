@@ -1,5 +1,5 @@
 // those who try to mimic the ext4 filesystem
-package com.opuadm.commands.cli;
+/* package com.opuadm.commands.cli;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -629,4 +629,4 @@ public class FakeFS {
     public boolean createEmptyFile(String path) {
         return createFile(path, "");
     }
-}
+} */
