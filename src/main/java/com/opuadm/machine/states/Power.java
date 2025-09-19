@@ -10,6 +10,8 @@ public class Power {
     private boolean isOff = true;
     private boolean isBooting = false;
 
+    // Status 1 = On | Status 0 = Off | Status 2 = Booting | Status -1 = Error
+
     public int checkPowerStatus() {
         if (isOn && !isOff && !isBooting) {
             return 1;
