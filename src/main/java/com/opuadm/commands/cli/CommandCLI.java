@@ -2,6 +2,8 @@
 package com.opuadm.commands.cli;
 
 import com.opuadm.LinuxifyMC;
+import com.opuadm.machine.fs.FakeFS;
+import com.opuadm.machine.fs.ConvertPerms;
 
 import net.kyori.adventure.text.Component;
 
@@ -18,6 +20,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
+import javax.xml.crypto.Data;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.logging.Logger;
@@ -31,11 +34,11 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
 
             if (args.length == 0) {
                 assert fs != null;
-                String currentDir = fs.getCurrentDirectory();
+                String currentDir = fs.getCurrentDir();
                 String prompt = player.getName() + "@" + LinuxifyMC.hostname + ":" + currentDir + "$ ";
                 sender.sendMessage(prompt);
 
-                if (!FakeFS.saveFS(player, fs)) {
+                if (!fs.saveFS(player, fs)) {
                     sender.sendMessage("Warning: Failed to save filesystem state");
                 }
                 return true;
@@ -49,7 +52,7 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
     public boolean executeCommand(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (args.length == 0) return true;
 
-        String currentDir = fs.getCurrentDirectory();
+        String currentDir = fs.getCurrentDir();
         String prompt = player.getName().toLowerCase() + "@" + LinuxifyMC.hostname + ":" + currentDir + "$ ";
         String fullCommand = String.join(" ", args);
 
@@ -169,9 +172,9 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
 
         if (isRedirection) {
             String content = capturedOutput.toString();
-            if (isAppending) fs.appendToFile(redirectFile, content);
+            if (isAppending) fs.appendFile(redirectFile, content);
             else
-                fs.createFile(redirectFile, content, player.getName(), player.getName(), "777", System.currentTimeMillis());
+                fs.makeFile(redirectFile, player.getName(), ConvertPerms.symbolicToOctal("777"), content);
         }
 
         return success;
