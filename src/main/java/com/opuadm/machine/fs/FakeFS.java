@@ -89,28 +89,6 @@ public class FakeFS {
     }
 
     // Generic / Misc
-    public boolean saveFS(Player player, FakeFS fsInstance) {
-        if (DB == null) {
-            logger.warning("E: Database is not initialized.");
-            return false;
-        }
-        if (fsInstance == null) {
-            logger.warning("E: fsInstance is null.");
-            return false;
-        }
-        try {
-            String sql = "INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)";
-            long totalUsed = fsInstance.diskSpaceUsed + fsInstance.diskSpaceUsedByUserFiles;
-            long free = fsInstance.maxDiskSpace - totalUsed;
-            DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, totalUsed, free, fsInstance.CurDir);
-            return true;
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "E: An error occurred while saving the filesystem: " + e.getMessage(), e);
-            return false;
-        }
-    }
-
     public void upgradeFS(FakeFS fsInstance) {
         if (DB == null) {
             logger.warning("E: Database is not initialized.");
@@ -161,31 +139,129 @@ public class FakeFS {
         }
     }
 
-    private void loadOrCreateSaveRow() {
+    private void txWriteFile(String path, String newContent, boolean append) {
+        if (playerUuid == null) return;
+        try {
+            DB.runInTransaction(conn -> {
+                Object lenObj = DB.singleValueQuery("SELECT length(content) FROM fs_files WHERE player_uuid = ? AND path = ?",
+                        playerUuid.toString(), path);
+                if (lenObj == null && !append) {
+                    DB.executeUpdate("INSERT INTO fs_files (player_uuid, path, owner, group_name, permissions, content) VALUES (?, ?, ?, ?, ?, ?)",
+                            playerUuid.toString(), path, plr, defaultGroup, "644", "");
+                    lenObj = 0;
+                }
+                if (lenObj == null) {
+                    logger.warning("E: File not found or could not be updated: " + path);
+                    return null;
+                }
+
+                long oldLen = (lenObj instanceof Number n) ? n.longValue() : 0L;
+                long newLen;
+
+                if (append) {
+                    DB.executeUpdate("UPDATE fs_files SET content = COALESCE(content, '') || ? WHERE player_uuid = ? AND path = ?",
+                            newContent != null ? newContent : "", playerUuid.toString(), path);
+                    newLen = oldLen + (newContent != null ? newContent.length() : 0);
+                } else {
+                    DB.executeUpdate("UPDATE fs_files SET content = ? WHERE player_uuid = ? AND path = ?",
+                            newContent, playerUuid.toString(), path);
+                    newLen = (newContent != null ? newContent.length() : 0);
+                }
+
+                long delta = newLen - oldLen;
+                if (delta > 0) diskSpaceUsedByUserFiles += delta;
+                else if (delta < 0) diskSpaceUsedByUserFiles = Math.max(0L, diskSpaceUsedByUserFiles + delta);
+                updateDiskSpaceUsage();
+
+                DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
+                        playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
+                return null;
+            });
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: txWriteFile failed: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean setCurrentDir(String target) {
+        if (playerUuid == null) return false;
+        if (target == null || target.isEmpty()) return false;
+
+        String home = "/home/" + plr.toLowerCase();
+        String norm = target.trim();
+
+        if (norm.equals("~")) {
+            norm = home;
+        } else if (norm.startsWith("~/")) {
+            norm = home + norm.substring(1);
+        }
+
+        norm = norm.replaceAll("/+", "/");
+        if (norm.length() > 1 && norm.endsWith("/")) norm = norm.substring(0, norm.length() - 1);
+
+        String verified = getDir(norm);
+        if (verified == null) return false;
+
+        try {
+            this.CurDir = verified;
+            DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
+                    playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, this.CurDir);
+            return true;
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: setCurrentDir persist failed: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    // Save/Load
+
+    public void loadFS() {
         if (playerUuid == null) return;
         try {
             var res = DB.query("SELECT fs_version, disk_space_used, disk_space_free, current_dir FROM fs_saves WHERE player_uuid = ?",
                     playerUuid.toString());
             if (res == null || res.isEmpty()) {
-                DB.query("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) " +
-                                "VALUES (?, ?, ?, ?, ?, ?)",
+                DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
                         playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
             } else {
                 var row = res.getFirst();
                 Object used = row.get(1);
-                Object free = row.get(2);
                 Object dir = row.get(3);
-                if (used instanceof Number u) diskSpaceUsedByUserFiles = Math.max(0L, u.longValue() - diskSpaceUsed);
-                updateDiskSpaceUsage();
-                if (free instanceof Number f) {
-                    logger.fine("I: stored disk_space_free = " + f.longValue());
+                if (used instanceof Number u) {
+                    long storedTotal = u.longValue();
+                    long computedTotal = diskSpaceUsed + diskSpaceUsedByUserFiles;
+                    if (storedTotal != computedTotal) {
+                        // optional reconcile hook (skipped)
+                    }
                 }
                 if (dir instanceof String s && !s.isEmpty()) {
-                    logger.fine("I: current_dir stored = " + s + " (CurDir field is final)");
+                    // optional: set current dir from DB
+                    this.CurDir = s;
                 }
             }
         } catch (Exception e) {
-            logger.log(Level.WARNING, "E: loadOrCreateSaveRow failed: " + e.getMessage(), e);
+            logger.log(Level.WARNING, "E: loadFS failed: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean saveFS(Player player, FakeFS fsInstance) {
+        if (DB == null) {
+            logger.warning("E: Database is not initialized.");
+            return false;
+        }
+        if (fsInstance == null) {
+            logger.warning("E: fsInstance is null.");
+            return false;
+        }
+        try {
+            String sql = "INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) " +
+                    "VALUES (?, ?, ?, ?, ?, ?)";
+            long totalUsed = fsInstance.diskSpaceUsed + fsInstance.diskSpaceUsedByUserFiles;
+            long free = fsInstance.maxDiskSpace - totalUsed;
+            DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, totalUsed, free, fsInstance.CurDir);
+            return true;
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: An error occurred while saving the filesystem: " + e.getMessage(), e);
+            return false;
         }
     }
 
@@ -240,16 +316,16 @@ public class FakeFS {
             path = getString(path);
             if (path == null) return;
 
-            var countResult = DB.query("SELECT COUNT(*) AS cnt FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+            Object cntObj = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
-            if (countResult == null || countResult.isEmpty()) return;
-
-            long dirCount = ((Number) countResult.getFirst().getFirst()).longValue();
-
+            long dirCount = cntObj instanceof Number ? ((Number) cntObj).longValue() : 0L;
             if (dirCount > 0) return;
 
-            DB.query("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
+            DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
                     playerUuid.toString(), path, owner, defaultGroup, perms);
+
+            DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
+                    playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
 
             changePermissions(path, perms);
         } catch (Exception e) {
@@ -335,28 +411,8 @@ public class FakeFS {
                 logger.warning("E: Path cannot be null or empty.");
                 return;
             }
-
             path = path.replaceAll("/+", "/");
-
-            var exists = DB.query("SELECT length(content) FROM fs_files WHERE player_uuid = ? AND path = ?",
-                    playerUuid.toString(), path);
-            if (exists == null || exists.isEmpty()) {
-                logger.warning("E: File not found or could not be updated: " + path);
-            } else {
-                long oldLen = 0L;
-                Object lenObj = exists.getFirst().getFirst();
-                if (lenObj instanceof Number n) oldLen = n.longValue();
-                long newLen = content != null ? content.length() : 0L;
-                long delta = newLen - oldLen;
-
-                DB.query("UPDATE fs_files SET content = ? WHERE player_uuid = ? AND path = ?",
-                        content, playerUuid.toString(), path);
-
-                if (delta != 0) {
-                    diskSpaceUsedByUserFiles += Math.max(0, delta);
-                    updateDiskSpaceUsage();
-                }
-            }
+            txWriteFile(path, content, false);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while writing to the file: " + e.getMessage(), e);
         }
@@ -369,21 +425,16 @@ public class FakeFS {
                 logger.warning("E: Path cannot be null or empty.");
                 return;
             }
-
             path = path.replaceAll("/+", "/");
-
-            var exists = DB.query("SELECT COUNT(*) AS cnt FROM fs_files WHERE player_uuid = ? AND path = ?",
+            // ensure file exists
+            Object existsCnt = DB.singleValueQuery("SELECT COUNT(*) FROM fs_files WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
-            if (exists == null || exists.isEmpty() || ((Number) exists.getFirst().getFirst()).longValue() == 0L) {
+            long cnt = (existsCnt instanceof Number n) ? n.longValue() : 0L;
+            if (cnt == 0L) {
                 logger.warning("E: File not found or could not be updated: " + path);
-            } else {
-                if (content != null) {
-                    diskSpaceUsedByUserFiles += content.length();
-                    updateDiskSpaceUsage();
-                }
-                DB.query("UPDATE fs_files SET content = COALESCE(content, '') || ? WHERE player_uuid = ? AND path = ?",
-                        content, playerUuid.toString(), path);
+                return;
             }
+            txWriteFile(path, content, true);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while appending to the file: " + e.getMessage(), e);
         }
@@ -483,5 +534,33 @@ public class FakeFS {
     private synchronized void updateDiskSpaceUsage() {
         totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
         diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
+    }
+
+    private void loadOrCreateSaveRow() {
+        if (playerUuid == null) return;
+        try {
+            var res = DB.query("SELECT fs_version, disk_space_used, disk_space_free, current_dir FROM fs_saves WHERE player_uuid = ?",
+                    playerUuid.toString());
+            if (res == null || res.isEmpty()) {
+                DB.query("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) " +
+                                "VALUES (?, ?, ?, ?, ?, ?)",
+                        playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
+            } else {
+                var row = res.getFirst();
+                Object used = row.get(1);
+                Object free = row.get(2);
+                Object dir = row.get(3);
+                if (used instanceof Number u) diskSpaceUsedByUserFiles = Math.max(0L, u.longValue() - diskSpaceUsed);
+                updateDiskSpaceUsage();
+                if (free instanceof Number f) {
+                    logger.fine("I: stored disk_space_free = " + f.longValue());
+                }
+                if (dir instanceof String s && !s.isEmpty()) {
+                    logger.fine("I: current_dir stored = " + s + " (CurDir field is final)");
+                }
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: loadOrCreateSaveRow failed: " + e.getMessage(), e);
+        }
     }
 }

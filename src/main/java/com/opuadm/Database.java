@@ -1,9 +1,9 @@
 package com.opuadm;
 
-import org.bukkit.entity.Player;
 import java.io.File;
 import java.sql.*;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Level;
 
 @SuppressWarnings("SqlSourceToSinkFlow")
@@ -35,7 +35,6 @@ public class Database {
 
             connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
 
-            // SQLite optimizations
             try (Statement stmt = connection.createStatement()) {
                 stmt.executeUpdate("PRAGMA journal_mode=WAL");
                 stmt.executeUpdate("PRAGMA synchronous=NORMAL");
@@ -78,20 +77,65 @@ public class Database {
         return results;
     }
 
-    public void saveData(Player player, String fsData) {
-        query("INSERT OR REPLACE INTO player_data (uuid, username, fs_data, last_updated) VALUES (?, ?, ?, ?)",
-                player.getUniqueId().toString(), player.getName(), fsData, System.currentTimeMillis());
+    @SuppressWarnings("UnusedReturnValue")
+    public int executeUpdate(String sql, Object... params) {
+        try {
+            ensureConnection();
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                setParameters(stmt, params);
+                return stmt.executeUpdate();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Execute update failed: " + sql, e);
+            return -1;
+        }
     }
 
-    public String loadFSData(UUID playerUUID) {
-        List<List<Object>> results = query("SELECT fs_data FROM player_data WHERE uuid = ?",
-                playerUUID.toString());
-
-        if (!results.isEmpty() && !results.getFirst().isEmpty()) {
-            Object data = results.getFirst().getFirst();
-            return data != null ? data.toString() : null;
+    public Object singleValueQuery(String sql, Object... params) {
+        try {
+            ensureConnection();
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                setParameters(stmt, params);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getObject(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "singleValueQuery failed: " + sql, e);
         }
         return null;
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    public <T> T runInTransaction(Function<Connection, T> work) {
+        try {
+            ensureConnection();
+            boolean oldAutoCommit = connection.getAutoCommit();
+            try {
+                connection.setAutoCommit(false);
+                T result = work.apply(connection);
+                connection.commit();
+                return result;
+            } catch (Exception ex) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rbEx) {
+                    plugin.getLogger().log(Level.WARNING, "Transaction rollback failed", rbEx);
+                }
+                throw new RuntimeException(ex);
+            } finally {
+                try {
+                    connection.setAutoCommit(oldAutoCommit);
+                } catch (SQLException acEx) {
+                    plugin.getLogger().log(Level.WARNING, "Failed to restore autoCommit", acEx);
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "runInTransaction failed to obtain connection", e);
+            throw new RuntimeException(e);
+        }
     }
 
     private void ensureConnection() throws SQLException {
@@ -132,6 +176,7 @@ public class Database {
         }
     }
 
+    @SuppressWarnings("unused")
     public Connection getConnection() throws SQLException {
         ensureConnection();
         return connection;
