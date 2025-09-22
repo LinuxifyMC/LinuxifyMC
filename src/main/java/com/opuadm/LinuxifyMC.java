@@ -12,8 +12,8 @@ import org.bstats.bukkit.Metrics;
 
 import java.util.Objects;
 
-import com.opuadm.commands.cli.FakeFS;
-import com.opuadm.commands.cli.CommandCLI;
+import com.opuadm.machine.fs.FakeFS;
+import com.opuadm.commands.cli.Shell;
 import com.opuadm.commands.linuxifymc.LinuxifyMCSettings;
 
 public final class LinuxifyMC extends JavaPlugin implements Listener {
@@ -27,6 +27,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     int pluginId = 26603;
 
     private Database database;
+    private FakeFS fs;
 
     public Database getDatabase() {
         return database;
@@ -37,12 +38,11 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         saveDefaultConfig();
 
         database = new Database(this);
-        FakeFS.checkAndUpgradeFilesystems();
 
         getServer().getPluginManager().registerEvents(this, this);
 
-        Objects.requireNonNull(this.getCommand("cli")).setExecutor(new CommandCLI());
-        Objects.requireNonNull(this.getCommand("cli")).setTabCompleter(new CommandCLI());
+        Objects.requireNonNull(this.getCommand("cli")).setExecutor(new Shell());
+        Objects.requireNonNull(this.getCommand("cli")).setTabCompleter(new Shell());
         Objects.requireNonNull(this.getCommand("linuxifymc")).setExecutor(new LinuxifyMCSettings());
         Objects.requireNonNull(this.getCommand("linuxifymc")).setTabCompleter(new LinuxifyMCSettings());
 
@@ -76,7 +76,10 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+        FakeFS plrFS = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+        if (plrFS != null) {
+            fs.upgradeFS(plrFS);
+        }
     }
 
     @EventHandler

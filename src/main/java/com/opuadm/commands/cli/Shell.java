@@ -20,13 +20,12 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.crypto.Data;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
-public class CommandCLI implements CommandExecutor, TabCompleter {
+public class Shell implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player player) {
@@ -109,7 +108,7 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
                 String[] cmdArgs = cmd.trim().split("\\s+");
                 if (cmdArgs.length == 0) continue;
                 String cmdName = cmdArgs[0];
-                if (!Arrays.asList(CommandVarsCLI.cmds).contains(cmdName)) {
+                if (!Arrays.asList(ShellVars.cmds).contains(cmdName)) {
                     effectiveSender.sendMessage(cmdName + ": command not found");
                     success = false;
                     break;
@@ -144,7 +143,7 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
             }
         } else {
             String cmdName = args[0];
-            if (!Arrays.asList(CommandVarsCLI.cmds).contains(cmdName)) {
+            if (!Arrays.asList(ShellVars.cmds).contains(cmdName)) {
                 effectiveSender.sendMessage(cmdName + ": command not found");
                 return false;
             }
@@ -185,7 +184,7 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         List<String> availableCommands = new ArrayList<>();
-        for (String cmd : CommandVarsCLI.cmds) {
+        for (String cmd : ShellVars.cmds) {
             if (cmd.equals("test") || cmd.equals("serverfetch")) {
                 if (sender.hasPermission("linuxifymc.command.cli.nonlinuxcmds")) {
                     availableCommands.add(cmd);
@@ -214,13 +213,13 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
                 String argToComplete = chainArgs[chainArgs.length - 1];
 
                 if (cmdName.equalsIgnoreCase("ls") && chainArgs.length == 2) {
-                    StringUtil.copyPartialMatches(argToComplete, CommandVarsCLI.LsOpts(), completions);
+                    StringUtil.copyPartialMatches(argToComplete, ShellVars.LsOpts(), completions);
                 } else if (cmdName.equalsIgnoreCase("uname") && chainArgs.length == 2) {
-                    StringUtil.copyPartialMatches(argToComplete, CommandVarsCLI.UnameOpts(), completions);
+                    StringUtil.copyPartialMatches(argToComplete, ShellVars.UnameOpts(), completions);
                 } else if (cmdName.equalsIgnoreCase("chmod") && chainArgs.length == 2) {
-                    StringUtil.copyPartialMatches(argToComplete, CommandVarsCLI.ChmodPerms(), completions);
+                    StringUtil.copyPartialMatches(argToComplete, ShellVars.ChmodPerms(), completions);
                 } else if (cmdName.equalsIgnoreCase("uname") && chainArgs.length == 3 && chainArgs[1].equalsIgnoreCase("-s")) {
-                    StringUtil.copyPartialMatches(argToComplete, CommandVarsCLI.UnameOptsS(), completions);
+                    StringUtil.copyPartialMatches(argToComplete, ShellVars.UnameOptsS(), completions);
                 }
             }
         } else {
@@ -230,18 +229,18 @@ public class CommandCLI implements CommandExecutor, TabCompleter {
                     break;
                 case 2:
                     if (args[0].equalsIgnoreCase("ls")) {
-                        StringUtil.copyPartialMatches(args[1], CommandVarsCLI.LsOpts(), completions);
+                        StringUtil.copyPartialMatches(args[1], ShellVars.LsOpts(), completions);
                     } else if (args[0].equalsIgnoreCase("uname")) {
-                        StringUtil.copyPartialMatches(args[1], CommandVarsCLI.UnameOpts(), completions);
+                        StringUtil.copyPartialMatches(args[1], ShellVars.UnameOpts(), completions);
                     } else if (args[0].equalsIgnoreCase("chmod")) {
-                        StringUtil.copyPartialMatches(args[1], CommandVarsCLI.ChmodPerms(), completions);
+                        StringUtil.copyPartialMatches(args[1], ShellVars.ChmodPerms(), completions);
                     } else if (args[0].equalsIgnoreCase("mkdir")) {
-                        StringUtil.copyPartialMatches(args[1], CommandVarsCLI.MkdirOpts(), completions);
+                        StringUtil.copyPartialMatches(args[1], ShellVars.MkdirOpts(), completions);
                     }
                     break;
                 case 3:
                     if (args[0].equalsIgnoreCase("uname") && args[1].equalsIgnoreCase("-s")) {
-                        StringUtil.copyPartialMatches(args[2], CommandVarsCLI.UnameOptsS(), completions);
+                        StringUtil.copyPartialMatches(args[2], ShellVars.UnameOptsS(), completions);
                     }
                     break;
             }

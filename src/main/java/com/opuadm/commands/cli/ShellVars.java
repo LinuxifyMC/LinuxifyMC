@@ -2,7 +2,7 @@ package com.opuadm.commands.cli;
 
 import java.util.List;
 
-public class CommandVarsCLI
+public class ShellVars
 {
     public static final String[] cmds = {
             "help",
