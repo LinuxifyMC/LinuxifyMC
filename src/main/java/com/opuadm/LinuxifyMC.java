@@ -59,13 +59,13 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        FakeFS.cleanup();
+        // FakeFS.cleanup();
         if (database != null) {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
                 if (fs != null) {
-                    FakeFS.saveFS(player, fs);
-                    FakeFS.removePlayerFS(player.getUniqueId());
+                    fs.saveFS(player, fs);
+                    // FakeFS.removePlayerFS(player.getUniqueId());
                 }
             }
             database.close();
@@ -87,8 +87,8 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
         if (fs != null && database != null) {
-            FakeFS.saveFS(player, fs);
+            fs.saveFS(player, fs);
         }
-        FakeFS.removePlayerFS(player.getUniqueId());
+        // FakeFS.removePlayerFS(player.getUniqueId());
     }
 }
