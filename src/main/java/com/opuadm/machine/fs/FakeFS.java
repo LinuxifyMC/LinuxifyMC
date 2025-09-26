@@ -169,8 +169,7 @@ public class FakeFS {
                 }
 
                 long delta = newLen - oldLen;
-                if (delta > 0) diskSpaceUsedByUserFiles += delta;
-                else if (delta < 0) diskSpaceUsedByUserFiles = Math.max(0L, diskSpaceUsedByUserFiles + delta);
+                adjustUserFileBytes(delta);
                 updateDiskSpaceUsage();
 
                 DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
@@ -227,14 +226,9 @@ public class FakeFS {
                 Object used = row.get(1);
                 Object dir = row.get(3);
                 if (used instanceof Number u) {
-                    long storedTotal = u.longValue();
-                    long computedTotal = diskSpaceUsed + diskSpaceUsedByUserFiles;
-                    if (storedTotal != computedTotal) {
-                        // optional reconcile hook (skipped)
-                    }
+                    u.longValue();
                 }
                 if (dir instanceof String s && !s.isEmpty()) {
-                    // optional: set current dir from DB
                     this.CurDir = s;
                 }
             }
@@ -255,7 +249,7 @@ public class FakeFS {
         try {
             String sql = "INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) " +
                     "VALUES (?, ?, ?, ?, ?, ?)";
-            long totalUsed = fsInstance.diskSpaceUsed + fsInstance.diskSpaceUsedByUserFiles;
+            long totalUsed = fsInstance.diskSpaceUsed + fsInstance.getUserFileBytes();
             long free = fsInstance.maxDiskSpace - totalUsed;
             DB.query(sql, player.getUniqueId().toString(), player.getName(), FS_VER, totalUsed, free, fsInstance.CurDir);
             return true;
@@ -353,7 +347,7 @@ public class FakeFS {
 
             changePermissions(path, perms);
             if (content != null) {
-                diskSpaceUsedByUserFiles += content.length();
+                adjustUserFileBytes(content.length());
                 updateDiskSpaceUsage();
             }
         } catch (Exception e) {
@@ -401,6 +395,30 @@ public class FakeFS {
             logger.log(Level.WARNING, "E: An error occurred while reading file: " + e.getMessage(), e);
             return null;
         }
+    }
+
+    public String listCurrentDir(String path, boolean showHidden, boolean showDetails) {
+        if (playerUuid == null) return "";
+        String d = (path == null || path.isEmpty()) ? CurDir : path;
+        d = d == null || d.isEmpty() ? "/" : d.replaceAll("/+", "/");
+        if (d.length() > 1 && d.endsWith("/")) d = d.substring(0, d.length() - 1);
+        String like = d.equals("/") ? "/%" : d + "/%";
+        String notLike = d.equals("/") ? "/%/%" : d + "/%/%";
+        var rows = DB.query(
+                "SELECT 'D' as t, path, owner, permissions FROM fs_dirs WHERE player_uuid=? AND path LIKE ? AND path NOT LIKE ? " +
+                        "UNION ALL SELECT 'F', path, owner, permissions FROM fs_files WHERE player_uuid=? AND path LIKE ? AND path NOT LIKE ?",
+                playerUuid.toString(), like, notLike, playerUuid.toString(), like, notLike);
+        if (rows == null) return "";
+        StringBuilder out = new StringBuilder();
+        for (var r : rows) {
+            String p = r.get(1).toString();
+            String name = p.substring(p.lastIndexOf('/') + 1);
+            if (!showHidden && name.startsWith(".")) continue;
+            if (showDetails) out.append(String.format("%s %s owner=%s perms=%s", r.get(0), p, r.get(2), r.get(3)));
+            else out.append(r.get(0)).append(" ").append(p);
+            out.append('\n');
+        }
+        return out.toString();
     }
 
     // Write (For files only)
@@ -532,7 +550,7 @@ public class FakeFS {
     }
 
     private synchronized void updateDiskSpaceUsage() {
-        totalDiskSpaceUsed = diskSpaceUsed + diskSpaceUsedByUserFiles;
+        totalDiskSpaceUsed = diskSpaceUsed + getUserFileBytes();
         diskSpaceFree = maxDiskSpace - totalDiskSpaceUsed;
     }
 
@@ -562,5 +580,14 @@ public class FakeFS {
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: loadOrCreateSaveRow failed: " + e.getMessage(), e);
         }
+    }
+
+    private synchronized void adjustUserFileBytes(long delta) {
+        if (delta >= 0) diskSpaceUsedByUserFiles += delta;
+        else diskSpaceUsedByUserFiles = Math.max(0L, diskSpaceUsedByUserFiles + delta);
+    }
+
+    private synchronized long getUserFileBytes() {
+        return diskSpaceUsedByUserFiles;
     }
 }

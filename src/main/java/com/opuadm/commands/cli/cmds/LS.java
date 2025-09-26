@@ -1,6 +1,6 @@
 package com.opuadm.commands.cli.cmds;
 
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 @SuppressWarnings("unused")
 public class LS {
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
-        String path = fs.getCurrentDirectory();
+        String path = fs.getCurrentDir();
         boolean showHidden = false;
         boolean showDetails = false;
 
@@ -21,7 +21,7 @@ public class LS {
             path = args[i];
         }
 
-        String listing = fs.listDirectory(path, showHidden, showDetails);
+        String listing = fs.listCurrentDir(path, showHidden, showDetails);
         if (listing != null) sender.sendMessage(listing);
         return true;
     }
