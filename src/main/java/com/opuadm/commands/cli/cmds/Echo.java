@@ -1,6 +1,6 @@
 package com.opuadm.commands.cli.cmds;
 
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
 import com.opuadm.LinuxifyMC;
 
 import org.bukkit.command.CommandSender;
@@ -18,9 +18,10 @@ public class Echo {
             String textToEcho = fullCommand.substring(5, redirectPos).trim();
             String fileName = fullCommand.substring(redirectPos + 2).trim();
 
-            if (fs.appendToFile(fileName, textToEcho)) {
+            try {
+                fs.appendFile(fileName, textToEcho);
                 sender.sendMessage("");
-            } else {
+            } catch (Exception e) {
                 sender.sendMessage(LinuxifyMC.shellname + ": echo: Failed to append to file '" + fileName + "'");
             }
         } else {

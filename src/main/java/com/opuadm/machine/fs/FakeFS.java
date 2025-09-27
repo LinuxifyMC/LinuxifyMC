@@ -355,6 +355,110 @@ public class FakeFS {
         }
     }
 
+    // Remove (Directories, Files, etc.)
+    public synchronized void deleteFile(String path) {
+        if (playerUuid == null) return;
+        if (path == null || path.isEmpty()) {
+            logger.warning("E: deleteFile requires a valid path.");
+            return;
+        }
+        try {
+            path = path.replaceAll("/+", "/");
+            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+
+            Object lenObj = DB.singleValueQuery("SELECT length(content) FROM fs_files WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path);
+            long oldLen = (lenObj instanceof Number n) ? n.longValue() : 0L;
+
+            int deleted = DB.executeUpdate("DELETE FROM fs_files WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path);
+            if (deleted > 0) {
+                // adjust disk usage
+                adjustUserFileBytes(-oldLen);
+                updateDiskSpaceUsage();
+                DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
+                        playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
+                logger.info("I: File deleted: " + path);
+            } else {
+                logger.fine("I: deleteFile: file not found: " + path);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: deleteFile failed: " + e.getMessage(), e);
+        }
+    }
+
+    public synchronized void deleteDir(String path, boolean force) {
+        if (playerUuid == null) return;
+        if (path == null || path.isEmpty()) {
+            logger.warning("E: deleteDir requires a valid path.");
+            return;
+        }
+        try {
+            path = path.replaceAll("/+", "/");
+            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+
+            var dirCheck = DB.query("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path);
+            long dirCount = 0;
+            if (dirCheck != null && !dirCheck.isEmpty()) {
+                dirCount = ((Number) dirCheck.getFirst().getFirst()).longValue();
+            }
+            if (dirCount == 0) {
+                logger.warning("E: deleteDir: Directory not found: " + path);
+                return;
+            }
+
+            String like = path.equals("/") ? "/%" : path + "/%";
+
+            var contentRows = DB.query(
+                    "SELECT (SELECT COUNT(*) FROM fs_dirs d WHERE d.player_uuid = ? AND d.path LIKE ?) AS dircnt, " +
+                            "(SELECT COALESCE(sum(length(content)),0) FROM fs_files f WHERE f.player_uuid = ? AND f.path LIKE ?) AS filesize, " +
+                            "(SELECT COUNT(*) FROM fs_files f WHERE f.player_uuid = ? AND f.path LIKE ?) AS filecnt",
+                    playerUuid.toString(), like,
+                    playerUuid.toString(), like,
+                    playerUuid.toString(), like
+            );
+
+            long dirCntInside = 0;
+            long totalFilesSize = 0;
+            long fileCnt = 0;
+            if (contentRows != null && !contentRows.isEmpty()) {
+                var row = contentRows.getFirst();
+                dirCntInside = ((Number) row.get(0)).longValue();
+                Object sizeObj = row.get(1);
+                totalFilesSize = (sizeObj instanceof Number n) ? n.longValue() : 0L;
+                fileCnt = ((Number) row.get(2)).longValue();
+            }
+
+            if (!force && (dirCntInside > 0 || fileCnt > 0)) {
+                logger.warning("E: deleteDir refused: directory not empty: " + path);
+                return;
+            }
+
+            if (force) {
+                if (totalFilesSize > 0) {
+                    adjustUserFileBytes(-totalFilesSize);
+                }
+
+                DB.executeUpdate("DELETE FROM fs_files WHERE player_uuid = ? AND path LIKE ?",
+                        playerUuid.toString(), like);
+                DB.executeUpdate("DELETE FROM fs_dirs WHERE player_uuid = ? AND path LIKE ?",
+                        playerUuid.toString(), like);
+            }
+
+            DB.executeUpdate("DELETE FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path);
+
+            updateDiskSpaceUsage();
+            DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
+                    playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
+
+            logger.info("I: Directory deleted: " + path + (force ? " (forced)" : ""));
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: deleteDir failed: " + e.getMessage(), e);
+        }
+    }
+
     // Get (Directories, Files, etc.)
     public String getDir(String path) {
         if (playerUuid == null) return null;
@@ -444,7 +548,7 @@ public class FakeFS {
                 return;
             }
             path = path.replaceAll("/+", "/");
-            // ensure file exists
+
             Object existsCnt = DB.singleValueQuery("SELECT COUNT(*) FROM fs_files WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
             long cnt = (existsCnt instanceof Number n) ? n.longValue() : 0L;
@@ -458,7 +562,7 @@ public class FakeFS {
         }
     }
 
-    // Permissions
+    // Permissions / Ownership
     public boolean hasPermissions(String perms, String owner, String group, String subject, String requiredPerm) {
         if (perms == null || perms.length() != 3) return false;
         int idx = 2;
@@ -514,6 +618,49 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while changing permissions: " + e.getMessage(), e);
+        }
+    }
+
+    public synchronized void changeOwner(String path, String newOwner) {
+        if (playerUuid == null) {
+            logger.warning("E: changeOwner requires player UUID.");
+            return;
+        }
+        if (path == null || path.isEmpty() || newOwner == null || newOwner.isEmpty()) {
+            logger.warning("E: changeOwner requires a valid path and owner.");
+            return;
+        }
+        try {
+            path = path.replaceAll("/+", "/");
+            if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
+
+            var dirRes = DB.query("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path);
+            long dirCount = 0;
+            if (dirRes != null && !dirRes.isEmpty()) {
+                dirCount = ((Number) dirRes.getFirst().getFirst()).longValue();
+            }
+
+            var fileRes = DB.query("SELECT COUNT(*) FROM fs_files WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path);
+            long fileCount = 0;
+            if (fileRes != null && !fileRes.isEmpty()) {
+                fileCount = ((Number) fileRes.getFirst().getFirst()).longValue();
+            }
+
+            if (dirCount > 0) {
+                DB.executeUpdate("UPDATE fs_dirs SET owner = ? WHERE player_uuid = ? AND path = ?",
+                        newOwner, playerUuid.toString(), path);
+                logger.info("I: Directory owner changed for " + path + " to " + newOwner);
+            } else if (fileCount > 0) {
+                DB.executeUpdate("UPDATE fs_files SET owner = ? WHERE player_uuid = ? AND path = ?",
+                        newOwner, playerUuid.toString(), path);
+                logger.info("I: File owner changed for " + path + " to " + newOwner);
+            } else {
+                logger.warning("E: changeOwner: Path not found: " + path);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: changeOwner failed: " + e.getMessage(), e);
         }
     }
 

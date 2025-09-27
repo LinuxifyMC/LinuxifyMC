@@ -1,6 +1,6 @@
 package com.opuadm.commands.cli.cmds;
 
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
 import com.opuadm.LinuxifyMC;
 
 import org.bukkit.command.CommandSender;

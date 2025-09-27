@@ -1,7 +1,7 @@
 package com.opuadm.commands.cli.cmds;
 
 import com.opuadm.LinuxifyMC;
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,11 +16,13 @@ public class Chown {
         String newOwner = args[1];
         String path = args[2];
 
-        if (fs.chown(path, newOwner)) {
+        try {
+            fs.changeOwner(path, newOwner);
             sender.sendMessage("");
-        } else {
+        } catch (Exception e) {
             sender.sendMessage(LinuxifyMC.shellname + ": chown: Failed to change owner for '" + path + "'");
         }
+
         return true;
     }
 }

@@ -4,7 +4,7 @@ import com.opuadm.LinuxifyMC;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
 
 @SuppressWarnings("unused")
 public class Help {
