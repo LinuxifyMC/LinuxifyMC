@@ -1,7 +1,8 @@
 package com.opuadm.commands.cli.cmds;
 
 import com.opuadm.LinuxifyMC;
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
+import com.opuadm.machine.fs.ConvertPerms;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,9 +17,10 @@ public class Touch {
         }
         String fileName = args[1];
 
-        if (fs.createEmptyFile(fileName)) {
+        try {
+            fs.makeFile(fileName, player.getName(), ConvertPerms.octalToSymbolic("777"), "");
             sender.sendMessage("");
-        } else {
+        } catch (Exception e) {
             sender.sendMessage(LinuxifyMC.shellname + ": touch: Failed to touch file '" + fileName + "'");
         }
         return true;

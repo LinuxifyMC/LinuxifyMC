@@ -1,10 +1,10 @@
 package com.opuadm.commands.cli.cmds;
 
+import com.opuadm.machine.fs.FakeFS;
+import com.opuadm.LinuxifyMC;
+
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
-
-import com.opuadm.commands.cli.FakeFS;
-import com.opuadm.LinuxifyMC;
 
 @SuppressWarnings("unused")
 public class Mkdir {
@@ -21,14 +21,14 @@ public class Mkdir {
             sender.sendMessage("Create the DIRECTORY(ies), if they do not already exist.");
             sender.sendMessage("Options:");
             sender.sendMessage("-h, --help     display this help and exit");
-            return true;
         } else {
-            if (fs.createDirectory(arg1, null, null)) {
-                // No Message
-            } else {
+            try {
+                fs.makeDir(arg1, null, null);
+                sender.sendMessage("");
+            } catch (Exception e) {
                 sender.sendMessage(LinuxifyMC.shellname + ": mkdir: Failed to create directory '" + arg1 + "'");
             }
-            return true;
         }
+        return true;
     }
 }

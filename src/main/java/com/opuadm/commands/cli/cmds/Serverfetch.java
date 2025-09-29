@@ -1,10 +1,10 @@
 package com.opuadm.commands.cli.cmds;
 
-import com.opuadm.commands.cli.FakeFS;
+import com.opuadm.machine.fs.FakeFS;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.Bukkit;
 
 @SuppressWarnings("unused")
 public class Serverfetch {
