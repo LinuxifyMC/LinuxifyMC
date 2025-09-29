@@ -76,5 +76,15 @@ public class Boot {
         if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
             plr.sendMessage(msg10);
         }
+
+        try {
+            Power.getFor(plr.getUniqueId()).TurnOnVarChange(true);
+        } catch (NoSuchMethodError | Exception e) {
+            String errMsg = MessageFormat.format("[    ${0}] Failed to power on virtual machine: {1}", Timer.getStamp(), e.getMessage());
+            CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, errMsg);
+            if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
+                plr.sendMessage(errMsg);
+            }
+        }
     }
 }

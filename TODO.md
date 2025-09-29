@@ -1,5 +1,5 @@
 # TODO
-- Remade filesystem (machine.fs.FakeFS)
+- Remade filesystem (machine.fs.FakeFS) [Somewhat Done]
 - A custom logger (will store logs in files)
 - An API for the Filesystem
 - Machine on-and-off states

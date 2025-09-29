@@ -66,8 +66,6 @@ public class Power {
             }
 
             Boot.Init(p);
-            isOn = true;
-            isBooting = false;
         }
         return 0;
     }
@@ -82,5 +80,38 @@ public class Power {
             isOff = true;
         }
         return 0;
+    }
+
+    public synchronized void TurnOnVarChange(Boolean value) {
+        if (Boolean.TRUE.equals(value)) {
+            isOn = true;
+            isOff = false;
+            isBooting = false;
+        } else {
+            isOn = false;
+        }
+    }
+
+    public synchronized void TurnOffVarChange(Boolean value) {
+        if (Boolean.TRUE.equals(value)) {
+            isOff = true;
+            isOn = false;
+            isBooting = false;
+        } else {
+            isOff = false;
+        }
+    }
+
+    public synchronized void IsBootingVarChange(Boolean value) {
+        if (Boolean.TRUE.equals(value)) {
+            isBooting = true;
+            isOn = false;
+            isOff = false;
+        } else {
+            isBooting = false;
+            if (!isOn && !isOff) {
+                isOff = true;
+            }
+        }
     }
 }
