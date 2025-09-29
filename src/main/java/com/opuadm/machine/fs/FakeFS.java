@@ -35,8 +35,8 @@ public class FakeFS {
     @SuppressWarnings("FieldMayBeFinal")
     public String CurDir;
 
-    private final String plr;
-    private final UUID playerUuid;
+    private String plr;
+    private UUID playerUuid;
 
     // Main Public for FakeFS
     public FakeFS(String playerName) {
@@ -212,30 +212,42 @@ public class FakeFS {
     }
 
     // Save/Load
-
-    public void loadFS() {
+    public void loadFS(UUID playerUuid) {
         if (playerUuid == null) return;
-        try {
-            var res = DB.query("SELECT fs_version, disk_space_used, disk_space_free, current_dir FROM fs_saves WHERE player_uuid = ?",
-                    playerUuid.toString());
-            if (res == null || res.isEmpty()) {
-                DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
-                        playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
-            } else {
-                var row = res.getFirst();
-                Object used = row.get(1);
-                Object dir = row.get(3);
-                if (used instanceof Number u) {
-                    u.longValue();
+        this.playerUuid = playerUuid;
+
+        FakeFS cached = PLAYER_FS.get(playerUuid);
+        if (cached != null && cached.plr != null && !cached.plr.isEmpty()) {
+            this.plr = cached.plr;
+        } else {
+            try {
+                var res = DB.query("SELECT player_name FROM fs_saves WHERE player_uuid = ?", playerUuid.toString());
+                if (res != null && !res.isEmpty()) {
+                    Object nameObj = res.getFirst().getFirst();
+                    if (nameObj instanceof String s && !s.isEmpty()) {
+                        this.plr = s;
+                    }
                 }
-                if (dir instanceof String s && !s.isEmpty()) {
-                    this.CurDir = s;
-                }
+            } catch (Exception e) {
+                logger.log(Level.FINE, "I: could not read stored player name for " + playerUuid + ": " + e.getMessage());
             }
+        }
+
+        if (this.plr == null || this.plr.isEmpty()) {
+            this.plr = "player-" + playerUuid.toString().substring(0, 8);
+        }
+
+        if (this.CurDir == null || this.CurDir.isEmpty()) {
+            this.CurDir = "/home/" + this.plr.toLowerCase();
+        }
+
+        try {
+            loadOrCreateSaveRow();
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: loadFS failed: " + e.getMessage(), e);
         }
     }
+
 
     public boolean saveFS(Player player, FakeFS fsInstance) {
         if (DB == null) {

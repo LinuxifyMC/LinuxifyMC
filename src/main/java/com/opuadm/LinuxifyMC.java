@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bstats.bukkit.Metrics;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import com.opuadm.machine.fs.FakeFS;
 import com.opuadm.commands.cli.Shell;
@@ -27,8 +28,10 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     int pluginId = 26603;
 
     private Database database;
+    @SuppressWarnings("unused")
     private FakeFS fs;
 
+    @SuppressWarnings("unused")
     public Database getDatabase() {
         return database;
     }
@@ -54,7 +57,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
             getLogger().info("Current Version:" + Bukkit.getVersion());
         }
 
-        Metrics metrics = new Metrics(this, pluginId);
+        @SuppressWarnings("unused") Metrics metrics = new Metrics(this, pluginId);
     }
 
     @Override
@@ -76,10 +79,14 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        FakeFS plrFS = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
-        if (plrFS != null) {
-            fs.upgradeFS(plrFS);
-        }
+        UUID uuid = player.getUniqueId();
+        Object exists = FakeFS.DB == null ? null : FakeFS.DB.singleValueQuery("SELECT 1 FROM fs_saves WHERE player_uuid = ?", uuid.toString());
+        boolean isNew = exists == null;
+        FakeFS plrFS = FakeFS.getPlayerFS(uuid, player.getName());
+        if (plrFS == null) return;
+        if (isNew) plrFS.setupSysFiles();
+        plrFS.loadFS(uuid);
+        plrFS.upgradeFS(plrFS);
     }
 
     @EventHandler
