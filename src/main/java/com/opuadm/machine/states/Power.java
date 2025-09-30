@@ -82,36 +82,19 @@ public class Power {
         return 0;
     }
 
-    public synchronized void TurnOnVarChange(Boolean value) {
-        if (Boolean.TRUE.equals(value)) {
-            isOn = true;
-            isOff = false;
-            isBooting = false;
-        } else {
-            isOn = false;
-        }
-    }
-
-    public synchronized void TurnOffVarChange(Boolean value) {
-        if (Boolean.TRUE.equals(value)) {
+    public synchronized void ChangeStateVar(Integer status) {
+        if (status == 0) {
             isOff = true;
             isOn = false;
             isBooting = false;
-        } else {
+        } else if (status == 1) {
+            isOn = true;
             isOff = false;
-        }
-    }
-
-    public synchronized void IsBootingVarChange(Boolean value) {
-        if (Boolean.TRUE.equals(value)) {
-            isBooting = true;
-            isOn = false;
-            isOff = false;
-        } else {
             isBooting = false;
-            if (!isOn && !isOff) {
-                isOff = true;
-            }
+        } else if (status == 2) {
+            isBooting = true;
+            isOff = false;
+            isOn = false;
         }
     }
 }

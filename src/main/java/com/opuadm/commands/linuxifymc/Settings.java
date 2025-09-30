@@ -2,6 +2,7 @@
 package com.opuadm.commands.linuxifymc;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -17,12 +18,12 @@ import java.util.List;
 
 import com.opuadm.LinuxifyMC;
 
-public class LinuxifyMCSettings implements CommandExecutor, TabCompleter {
+public class Settings implements CommandExecutor, TabCompleter {
     public static String perm1 = "linuxifymc.command.cli.nonlinuxcmds";
     public static String perm2 = "linuxifymc.command.bootlogs.sendinchat";
 
     @Override
-    public boolean onCommand(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             sender.sendMessage("LinuifyMC Settings for LinuxifyMC " + LinuxifyMC.version);
             sender.sendMessage("Syntax: /linuxifymc <global|user> <set|get> <setting> [value] [--no-override]");
@@ -181,7 +182,7 @@ public class LinuxifyMCSettings implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, org.bukkit.command.Command command, String label, String[] args) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {

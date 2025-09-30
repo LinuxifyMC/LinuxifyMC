@@ -1,5 +1,10 @@
 package com.opuadm;
 
+import com.opuadm.commands.linuxifymc.VM;
+import com.opuadm.machine.fs.FakeFS;
+import com.opuadm.commands.cli.Shell;
+import com.opuadm.commands.linuxifymc.Settings;
+
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.event.Listener;
@@ -12,10 +17,6 @@ import org.bstats.bukkit.Metrics;
 
 import java.util.Objects;
 import java.util.UUID;
-
-import com.opuadm.machine.fs.FakeFS;
-import com.opuadm.commands.cli.Shell;
-import com.opuadm.commands.linuxifymc.LinuxifyMCSettings;
 
 public final class LinuxifyMC extends JavaPlugin implements Listener {
     public static String version = "0.1.1";
@@ -46,8 +47,10 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
 
         Objects.requireNonNull(this.getCommand("cli")).setExecutor(new Shell());
         Objects.requireNonNull(this.getCommand("cli")).setTabCompleter(new Shell());
-        Objects.requireNonNull(this.getCommand("linuxifymc")).setExecutor(new LinuxifyMCSettings());
-        Objects.requireNonNull(this.getCommand("linuxifymc")).setTabCompleter(new LinuxifyMCSettings());
+        Objects.requireNonNull(this.getCommand("linuxifymc")).setExecutor(new Settings());
+        Objects.requireNonNull(this.getCommand("linuxifymc")).setTabCompleter(new Settings());
+        Objects.requireNonNull(this.getCommand("vcomputer")).setExecutor(new VM());
+        Objects.requireNonNull(this.getCommand("vcomputer")).setTabCompleter(new VM());
 
         getLogger().info("LinuxifyMC has been enabled. Version: " + version);
         if (!Bukkit.getVersion().contains("1.21")) {

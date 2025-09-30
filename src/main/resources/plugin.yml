@@ -16,6 +16,8 @@ commands:
   vcomputer:
     description: Virtual Computer operations
     usage: /<command> [start|stop]
+    aliases: [virtualcomputer, vm, virtcomp]
+    permission: linuxifymc.command.vcomputer
 permissions:
     linuxifymc.command.cli:
         description: Allows the player to use the Linux terminal simulator
@@ -34,4 +36,7 @@ permissions:
         default: true
     linuxifymc.command.bootlogs.sendinchat:
         description: Allows to send logs in the chat (to yourself only)
+        default: true
+    linuxifymc.command.vcomputer:
+        description: Allows the player to manage their own virtual linuxifyMC computer
         default: true
