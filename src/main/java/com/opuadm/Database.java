@@ -41,6 +41,31 @@ public class Database {
                 stmt.executeUpdate("PRAGMA cache_size=10000");
                 stmt.executeUpdate("PRAGMA temp_store=memory");
                 stmt.executeUpdate(CREATE_PLAYER_TABLE);
+
+                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS fs_dirs (" +
+                        "player_uuid TEXT NOT NULL, " +
+                        "path TEXT NOT NULL, " +
+                        "owner TEXT NOT NULL, " +
+                        "group_name TEXT NOT NULL, " +
+                        "permissions TEXT NOT NULL, " +
+                        "PRIMARY KEY (player_uuid, path))");
+
+                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS fs_files (" +
+                        "player_uuid TEXT NOT NULL, " +
+                        "path TEXT NOT NULL, " +
+                        "owner TEXT NOT NULL, " +
+                        "group_name TEXT NOT NULL, " +
+                        "permissions TEXT NOT NULL, " +
+                        "content TEXT, " +
+                        "PRIMARY KEY (player_uuid, path))");
+
+                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS fs_saves (" +
+                        "player_uuid TEXT PRIMARY KEY, " +
+                        "player_name TEXT NOT NULL, " +
+                        "fs_version TEXT NOT NULL, " +
+                        "disk_space_used INTEGER, " +
+                        "disk_space_free INTEGER, " +
+                        "current_dir TEXT)");
             }
 
             plugin.getLogger().info("Database initialized at: " + dbPath);

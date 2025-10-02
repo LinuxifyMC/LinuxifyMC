@@ -78,7 +78,7 @@ public class Boot {
         }
 
         try {
-            Power.getFor(plr.getUniqueId()).TurnOnVarChange(true);
+            Power.getFor(plr.getUniqueId()).ChangeStateVar(1);
         } catch (NoSuchMethodError | Exception e) {
             String errMsg = MessageFormat.format("[    ${0}] Failed to power on virtual machine: {1}", Timer.getStamp(), e.getMessage());
             CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, errMsg);

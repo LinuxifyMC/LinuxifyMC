@@ -42,6 +42,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         saveDefaultConfig();
 
         database = new Database(this);
+        FakeFS.DB = database;
 
         getServer().getPluginManager().registerEvents(this, this);
 
@@ -75,6 +76,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
                 }
             }
             database.close();
+            FakeFS.DB = null;
         }
         getLogger().info("LinuxifyMC has been disabled.");
     }
