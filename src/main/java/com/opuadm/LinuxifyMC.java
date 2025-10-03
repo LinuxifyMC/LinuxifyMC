@@ -89,8 +89,8 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         boolean isNew = exists == null;
         FakeFS plrFS = FakeFS.getPlayerFS(uuid, player.getName());
         if (plrFS == null) return;
-        if (isNew) plrFS.setupSysFiles();
         plrFS.loadFS(uuid);
+        if (isNew) plrFS.setupSysFiles();
         plrFS.upgradeFS(plrFS);
     }
 

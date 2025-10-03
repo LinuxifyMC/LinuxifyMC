@@ -2,13 +2,16 @@ package com.opuadm.commands.cli.cmds;
 
 import com.opuadm.LinuxifyMC;
 import com.opuadm.machine.fs.FakeFS;
-import com.opuadm.machine.fs.ConvertPerms;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.logging.Logger;
+
 @SuppressWarnings("unused")
 public class Touch {
+    private static final Logger LOG = Logger.getLogger("LinuxifyMC");
+
     @SuppressWarnings("unused")
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (args.length < 2) {
@@ -18,10 +21,13 @@ public class Touch {
         String fileName = args[1];
 
         try {
-            fs.makeFile(fileName, player.getName(), ConvertPerms.octalToSymbolic("777"), "");
-            sender.sendMessage("");
+            LOG.fine("touch: user=" + player.getName() + " path=" + fileName + " cwd=" + fs.getCurrentDir());
+            fs.makeFile(fileName, player.getName(), "777", "");
+            sender.sendMessage("File touched: " + fileName);
+            LOG.fine("touch: finished makeFile for " + fileName);
         } catch (Exception e) {
             sender.sendMessage(LinuxifyMC.shellname + ": touch: Failed to touch file '" + fileName + "'");
+            LOG.warning("touch: exception while touching file " + fileName + ": " + e.getMessage());
         }
         return true;
     }

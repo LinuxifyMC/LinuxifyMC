@@ -5,6 +5,7 @@ import com.opuadm.Database;
 
 import org.bukkit.entity.Player;
 
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class FakeFS {
@@ -184,20 +186,12 @@ public class FakeFS {
     public boolean setCurrentDir(String target) {
         if (playerUuid == null) return false;
         if (target == null || target.isEmpty()) return false;
+        Deque<String> stack = getStrings(target);
+        String finalPath = "/" +
+                String.join("/", stack);
+        if (finalPath.length() > 1 && finalPath.endsWith("/")) finalPath = finalPath.substring(0, finalPath.length() - 1);
 
-        String home = "/home/" + plr.toLowerCase();
-        String norm = target.trim();
-
-        if (norm.equals("~")) {
-            norm = home;
-        } else if (norm.startsWith("~/")) {
-            norm = home + norm.substring(1);
-        }
-
-        norm = norm.replaceAll("/+", "/");
-        if (norm.length() > 1 && norm.endsWith("/")) norm = norm.substring(0, norm.length() - 1);
-
-        String verified = getDir(norm);
+        String verified = getDir(finalPath);
         if (verified == null) return false;
 
         try {
@@ -209,6 +203,33 @@ public class FakeFS {
             logger.log(Level.WARNING, "E: setCurrentDir persist failed: " + e.getMessage(), e);
             return false;
         }
+    }
+
+    private @NotNull Deque<String> getStrings(String target) {
+        String home = "/home/" + plr.toLowerCase();
+        String norm = target.trim();
+        if (norm.equals("~")) {
+            norm = home;
+        } else if (norm.startsWith("~/")) {
+            norm = home + norm.substring(1);
+        }
+
+        if (!norm.startsWith("/")) {
+            String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
+            norm = (base.equals("/") ? "" : base) + "/" + norm;
+        }
+
+        String[] parts = norm.replaceAll("/+", "/").split("/");
+        Deque<String> stack = new java.util.ArrayDeque<>();
+        for (String p : parts) {
+            if (p.isEmpty() || p.equals(".")) continue;
+            if (p.equals("..")) {
+                if (!stack.isEmpty()) stack.removeLast();
+                continue;
+            }
+            stack.addLast(p);
+        }
+        return stack;
     }
 
     // Save/Load
@@ -243,6 +264,16 @@ public class FakeFS {
 
         try {
             loadOrCreateSaveRow();
+            Object rootCnt = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), "/");
+            Object homeCnt = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), "/home");
+            long r = rootCnt instanceof Number ? ((Number) rootCnt).longValue() : 0L;
+            long h = homeCnt instanceof Number ? ((Number) homeCnt).longValue() : 0L;
+            if (r == 0L || h == 0L) {
+                logger.info("I: system dirs missing for " + this.plr + ", creating them.");
+                setupSysFiles();
+            }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: loadFS failed: " + e.getMessage(), e);
         }
@@ -277,28 +308,50 @@ public class FakeFS {
             logger.warning("E: setupSysFiles requires player UUID.");
             return;
         }
-        // System Directories (From root directory)
-        this.makeDir("/sys", "root", "755");
-        this.makeDir("/dev", "root", "755");
-        this.makeDir("/etc", "root", "755");
-        this.makeDir("/boot", "root", "755");
-        this.makeDir("/proc", "root", "755");
-        this.makeDir("/root", "root", "755");
-        this.makeDir("/usr", "root", "755");
-        this.makeDir("/home", "root", "755");
-        this.makeDir("/tmp", "root", "755");
-        this.makeDir("/var", "root", "755");
-        this.makeDir("/opt", "root", "755");
-        // System Directories (From /usr directory)
-        this.makeDir("/usr/bin", "root", "755");
-        this.makeDir("/usr/sbin", "root", "755");
-        this.makeDir("/usr/lib", "root", "755");
-        this.makeDir("/usr/lib64", "root", "755");
-        this.makeDir("/usr/local", "root", "755");
-        // /var Directories
-        this.makeDir("/var/log", "root", "755");
-        // Player Home Directory
-        this.makeDir("/home/" + this.plr.toLowerCase(), this.plr.toLowerCase(), "755");
+
+        try {
+            Object rootExists = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), "/");
+            long rootCnt = rootExists instanceof Number ? ((Number) rootExists).longValue() : 0L;
+            if (rootCnt == 0L) {
+                DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
+                        playerUuid.toString(), "/", "root", defaultGroup, "755");
+                logger.info("I: created root directory for " + plr);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: Could not ensure root directory: " + e.getMessage(), e);
+        }
+
+        try {
+            String[] sysDirs = new String[] {
+                    "/sys", "/dev", "/etc", "/boot", "/proc", "/root",
+                    "/usr", "/home", "/tmp", "/var", "/opt",
+                    "/usr/bin", "/usr/sbin", "/usr/lib", "/usr/lib64", "/usr/local",
+                    "/var/log"
+            };
+            for (String d : sysDirs) {
+                Object cnt = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                        playerUuid.toString(), d);
+                long c = cnt instanceof Number ? ((Number) cnt).longValue() : 0L;
+                if (c == 0L) {
+                    DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
+                            playerUuid.toString(), d, "root", defaultGroup, "755");
+                    logger.fine("F: setupSysFiles inserted: " + d);
+                }
+            }
+
+            String homePath = "/home/" + this.plr.toLowerCase();
+            Object homeCntObj = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), homePath);
+            long homeCntVal = homeCntObj instanceof Number ? ((Number) homeCntObj).longValue() : 0L;
+            if (homeCntVal == 0L) {
+                DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
+                        playerUuid.toString(), homePath, this.plr.toLowerCase(), defaultGroup, "755");
+                logger.fine("F: setupSysFiles inserted player home: " + homePath);
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "E: setupSysFiles direct inserts failed: " + e.getMessage(), e);
+        }
     }
 
     // Player Filesystem (per-player by UUID)
@@ -317,10 +370,22 @@ public class FakeFS {
 
     // Make (Directories, Files, etc.)
     public synchronized void makeDir(String path, String owner, String perms) {
-        if (playerUuid == null) return;
+        if (playerUuid == null) {
+            logger.warning("W: makeDir called on uninitialized FakeFS (playerUuid == null). Attempting to recover using player name: " + this.plr);
+            return;
+        }
         try {
+            if (path != null && !path.startsWith("/")) { String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir; path = (base.equals("/") ? "" : base) + "/" + path; }
+            path = path == null ? null : path.replaceAll("/+", "/");
             path = getString(path);
             if (path == null) return;
+
+            if (owner == null || owner.isEmpty()) {
+                owner = this.plr != null ? this.plr.toLowerCase() : "root";
+            }
+            if (perms == null || perms.length() != 3) {
+                perms = "755";
+            }
 
             Object cntObj = DB.singleValueQuery("SELECT COUNT(*) FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
@@ -329,6 +394,8 @@ public class FakeFS {
 
             DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
                     playerUuid.toString(), path, owner, defaultGroup, perms);
+
+            logger.info("I: makeDir inserted: " + path + " owner=" + owner + " perms=" + perms);
 
             DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
                     playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
@@ -340,22 +407,39 @@ public class FakeFS {
     }
 
     public synchronized void makeFile(String path, String owner, String perms, String content) {
-        if (playerUuid == null) return;
+        if (playerUuid == null) {
+            logger.warning("W: makeFile called on uninitialized FakeFS (playerUuid == null). Player name: " + this.plr);
+            return;
+        }
         try {
+            if (path != null && !path.startsWith("/")) {
+                String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
+                path = (base.equals("/") ? "" : base) + "/" + path;
+            }
+            path = path == null ? null : path.replaceAll("/+", "/");
+
             path = getString(path);
             if (path == null) return;
 
+            if (owner == null || owner.isEmpty()) {
+                owner = this.plr != null ? this.plr.toLowerCase() : "root";
+            }
+            if (perms == null || perms.length() != 3) {
+                perms = "644";
+            }
+
             if (content != null && content.length() > diskSpaceFree) return;
 
-            var countResult = DB.query("SELECT COUNT(*) AS cnt FROM fs_files WHERE player_uuid = ? AND path = ?",
+            Object countObj = DB.singleValueQuery("SELECT COUNT(*) AS cnt FROM fs_files WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
-            if (countResult == null || countResult.isEmpty()) return;
-
-            long fileCount = ((Number) countResult.getFirst().getFirst()).longValue();
+            if (countObj == null) return;
+            long fileCount = (countObj instanceof Number) ? ((Number) countObj).longValue() : 0L;
             if (fileCount > 0) return;
 
-            DB.query("INSERT INTO fs_files (player_uuid, path, owner, group_name, permissions, content) VALUES (?, ?, ?, ?, ?, ?)",
+            DB.executeUpdate("INSERT INTO fs_files (player_uuid, path, owner, group_name, permissions, content) VALUES (?, ?, ?, ?, ?, ?)",
                     playerUuid.toString(), path, owner, defaultGroup, perms, content);
+
+            logger.info("I: makeFile inserted: " + path + " owner=" + owner + " perms=" + perms + " size=" + (content==null?0:content.length()));
 
             changePermissions(path, perms);
             if (content != null) {
@@ -530,8 +614,12 @@ public class FakeFS {
             String p = r.get(1).toString();
             String name = p.substring(p.lastIndexOf('/') + 1);
             if (!showHidden && name.startsWith(".")) continue;
-            if (showDetails) out.append(String.format("%s %s owner=%s perms=%s", r.get(0), p, r.get(2), r.get(3)));
-            else out.append(r.get(0)).append(" ").append(p);
+            if (showDetails) {
+                out.append(String.format("%s %s owner=%s perms=%s", r.get(0), p, r.get(2), r.get(3)));
+            } else {
+                out.append(name);
+                if (r.getFirst().equals("D")) out.append("/");
+            }
             out.append('\n');
         }
         return out.toString();
@@ -679,9 +767,19 @@ public class FakeFS {
     // Other / Uncategorized / Helpers
     @Nullable
     private String getString(String path) {
-        if (playerUuid == null) return null;
-        if (path == null || path.isEmpty()) return null;
+        if (playerUuid == null) {
+            logger.warning("E: getString refused: playerUuid is null for player=" + this.plr + " path=" + path);
+            return null;
+        }
+        if (path == null || path.isEmpty()) {
+            logger.warning("E: getString refused: path null/empty for player=" + this.plr);
+            return null;
+        }
 
+        if (!path.startsWith("/")) {
+            String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
+            path = (base.equals("/") ? "" : base) + "/" + path;
+        }
         path = path.replaceAll("/+", "/");
         if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
 
@@ -692,14 +790,20 @@ public class FakeFS {
             var parentResult = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), parentDir);
 
-            if (parentResult == null || parentResult.isEmpty()) return null;
+            if (parentResult == null || parentResult.isEmpty()) {
+                logger.fine("E: getString: parent directory not found for player=" + this.plr + " parent=" + parentDir + " path=" + path);
+                return null;
+            }
 
             List<Object> row = parentResult.getFirst();
             String parentOwner = (String) row.get(0);
             String parentGroup = (String) row.get(1);
             String parentPerms = (String) row.get(2);
 
-            if (!hasPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")) return null;
+            if (!hasPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")) {
+                logger.fine("E: getString: write permission denied for player=" + this.plr + " on parent=" + parentDir + " perms=" + parentPerms + " owner=" + parentOwner + " group=" + parentGroup);
+                return null;
+            }
         }
         return path;
     }
