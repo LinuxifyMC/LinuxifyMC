@@ -268,40 +268,43 @@ public class Shell implements CommandExecutor, TabCompleter {
                 StringUtil.copyPartialMatches("", available, out);
                 return out;
             }
+
             String[] chainArgs = last.split("\\s+");
             if (chainArgs.length == 1) {
                 StringUtil.copyPartialMatches(chainArgs[0], available, out);
             } else {
                 String cmd = chainArgs[0];
                 String arg = chainArgs[chainArgs.length - 1];
-                if (cmd.equalsIgnoreCase("ls") && chainArgs.length == 2) {
-                    StringUtil.copyPartialMatches(arg, ShellVars.LsOpts(), out);
-                } else if (cmd.equalsIgnoreCase("uname") && chainArgs.length == 2) {
-                    StringUtil.copyPartialMatches(arg, ShellVars.UnameOpts(), out);
-                } else if (cmd.equalsIgnoreCase("chmod") && chainArgs.length == 2) {
-                    StringUtil.copyPartialMatches(arg, ShellVars.ChmodPerms(), out);
-                } else if (cmd.equalsIgnoreCase("uname") && chainArgs.length == 3 && chainArgs[1].equalsIgnoreCase("-s")) {
-                    StringUtil.copyPartialMatches(arg, ShellVars.UnameOptsS(), out);
+                List<String> options = switch (cmd.toLowerCase()) {
+                    case "ls" -> ShellVars.LsOpts();
+                    case "uname" -> chainArgs.length == 3 && chainArgs[1].equalsIgnoreCase("-s") ? ShellVars.UnameOptsS() : ShellVars.UnameOpts();
+                    case "chmod" -> ShellVars.ChmodPerms();
+                    case "rm" -> ShellVars.RMOpts();
+                    default -> Collections.emptyList();
+                };
+                if (!options.isEmpty()) {
+                    StringUtil.copyPartialMatches(arg, options, out);
                 }
             }
             return out;
         }
 
+        String cmd = args[0].toLowerCase();
+        String arg = args.length > 1 ? args[1] : "";
+
         switch (args.length) {
             case 1 -> StringUtil.copyPartialMatches(args[0], available, out);
             case 2 -> {
-                if (args[0].equalsIgnoreCase("ls")) {
-                    StringUtil.copyPartialMatches(args[1], ShellVars.LsOpts(), out);
-                } else if (args[0].equalsIgnoreCase("uname")) {
-                    StringUtil.copyPartialMatches(args[1], ShellVars.UnameOpts(), out);
-                } else if (args[0].equalsIgnoreCase("chmod")) {
-                    StringUtil.copyPartialMatches(args[1], ShellVars.ChmodPerms(), out);
-                } else if (args[0].equalsIgnoreCase("mkdir")) {
-                    StringUtil.copyPartialMatches(args[1], ShellVars.MkdirOpts(), out);
+                switch (cmd) {
+                    case "ls" -> StringUtil.copyPartialMatches(arg, ShellVars.LsOpts(), out);
+                    case "uname" -> StringUtil.copyPartialMatches(arg, ShellVars.UnameOpts(), out);
+                    case "chmod" -> StringUtil.copyPartialMatches(arg, ShellVars.ChmodPerms(), out);
+                    case "mkdir" -> StringUtil.copyPartialMatches(arg, ShellVars.MkdirOpts(), out);
+                    case "rm" -> StringUtil.copyPartialMatches(arg, ShellVars.RMOpts(), out);
                 }
             }
             case 3 -> {
-                if (args[0].equalsIgnoreCase("uname") && args[1].equalsIgnoreCase("-s")) {
+                if (cmd.equals("uname") && args[1].equalsIgnoreCase("-s")) {
                     StringUtil.copyPartialMatches(args[2], ShellVars.UnameOptsS(), out);
                 }
             }

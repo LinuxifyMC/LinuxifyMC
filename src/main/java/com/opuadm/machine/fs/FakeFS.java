@@ -483,7 +483,7 @@ public class FakeFS {
         }
     }
 
-    public synchronized void deleteDir(String path, boolean force) {
+    public synchronized void deleteDir(String path, boolean recursive, boolean force) {
         if (playerUuid == null) return;
         if (path == null || path.isEmpty()) {
             logger.warning("E: deleteDir requires a valid path.");
@@ -526,12 +526,12 @@ public class FakeFS {
                 fileCnt = ((Number) row.get(2)).longValue();
             }
 
-            if (!force && (dirCntInside > 0 || fileCnt > 0)) {
+            if (!recursive && (dirCntInside > 0 || fileCnt > 0)) {
                 logger.warning("E: deleteDir refused: directory not empty: " + path);
                 return;
             }
 
-            if (force) {
+            if (recursive) {
                 if (totalFilesSize > 0) {
                     adjustUserFileBytes(-totalFilesSize);
                 }

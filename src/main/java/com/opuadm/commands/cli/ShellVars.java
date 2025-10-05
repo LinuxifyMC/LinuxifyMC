@@ -32,4 +32,6 @@ public class ShellVars
     public static List<String> MkdirOpts() { return List.of("--help", "-h"); }
 
     public static List<String> ChmodPerms() { return List.of("777", "644", "755", "700", "766"); }
+
+    public static List<String> RMOpts() { return List.of("-r", "-f"); }
 }

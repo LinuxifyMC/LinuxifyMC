@@ -7,3 +7,4 @@
 - Possibly a custom package manager (will be a part of non-linux-commands)
 - Some possible internet simulation
 - /vm or /vmachine or /virtualmachine command for managing your LinuxifyMC "virtual machine" (not an actual virtual machine, just simulation)
+- Eventually make there be REAL binaries in /usr/bin containing REAL java code and possible creation of your own binaries
