@@ -20,13 +20,36 @@ public class RM {
         for (int i = 1; i < args.length; i++) {
             String arg = args[i];
             if (arg == null || arg.isEmpty()) continue;
-            if (arg.equalsIgnoreCase("--recursive") || arg.equalsIgnoreCase("-r")) {
-                recursive = true;
-            } else if (arg.equalsIgnoreCase("--force") || arg.equalsIgnoreCase("-f")) {
-                force = true;
-            } else if (path == null && !arg.startsWith("-")) {
-                path = arg;
+
+            if ("--".equals(arg)) {
+                if (i + 1 < args.length) path = args[i + 1];
+                break;
             }
+
+            if (arg.startsWith("--")) {
+                if ("--recursive".equalsIgnoreCase(arg)) {
+                    recursive = true;
+                } else if ("--force".equalsIgnoreCase(arg)) {
+                    force = true;
+                }
+                continue;
+            }
+
+            if (arg.startsWith("-") && arg.length() > 1) {
+                for (int j = 1; j < arg.length(); j++) {
+                    char c = arg.charAt(j);
+                    switch (c) {
+                        case 'r', 'R' -> recursive = true;
+                        case 'f', 'F' -> force = true;
+                        default -> {
+                        }
+                    }
+                }
+                continue;
+            }
+
+            path = arg;
+            break;
         }
 
         if (path == null) {
@@ -44,13 +67,9 @@ public class RM {
         String dirPath = fs.getDir(normPath);
 
         if (dirPath != null && fileContent == null) {
-            if (!recursive) {
-                sender.sendMessage(LinuxifyMC.shellname + ": rm: " + path + ": is a directory");
-                return true;
-            }
+            boolean passRecursive = recursive || force;
             try {
-                fs.deleteDir(normPath, true, force);
-                if (!force) sender.sendMessage("");
+                fs.deleteDir(normPath, passRecursive, force);
             } catch (Exception e) {
                 if (!force) sender.sendMessage(LinuxifyMC.shellname + ": rm: " + path + ": Failed to remove");
             }
@@ -60,7 +79,6 @@ public class RM {
         if (fileContent != null) {
             try {
                 fs.deleteFile(normPath);
-                if (!force) sender.sendMessage("");
             } catch (Exception e) {
                 if (!force) sender.sendMessage(LinuxifyMC.shellname + ": rm: " + path + ": Failed to remove");
             }
