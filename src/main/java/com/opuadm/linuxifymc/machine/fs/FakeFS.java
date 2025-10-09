@@ -187,12 +187,14 @@ public class FakeFS {
         if (playerUuid == null) return false;
         if (target == null || target.isEmpty()) return false;
         Deque<String> stack = getStrings(target);
-        String finalPath = "/" +
-                String.join("/", stack);
+        String finalPath = "/" + String.join("/", stack);
         if (finalPath.length() > 1 && finalPath.endsWith("/")) finalPath = finalPath.substring(0, finalPath.length() - 1);
 
         String verified = getDir(finalPath);
-        if (verified == null) return false;
+        if (verified == null) {
+            logger.fine("E: setCurrentDir failed: target=" + target + " resolved=" + finalPath);
+            return false;
+        }
 
         try {
             this.CurDir = verified;
@@ -568,7 +570,7 @@ public class FakeFS {
             var result = DB.query("SELECT path FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
             if (result == null || result.isEmpty()) {
-                logger.warning("E: Directory not found: " + path);
+                logger.fine("E: Directory not found for player=" + plr + ": " + path);
                 return null;
             }
         } catch (Exception e) {
