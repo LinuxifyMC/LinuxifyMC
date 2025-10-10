@@ -1,9 +1,10 @@
-package com.opuadm.linuxifymc.commands.cli;
+package com.opuadm.linuxifymc.machine.shell;
 
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.ConvertPerms;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.states.Power;
+import com.opuadm.linuxifymc.machine.login.Login;
 
 import net.kyori.adventure.text.Component;
 
@@ -35,7 +36,7 @@ public class Shell implements CommandExecutor, TabCompleter {
         if (!(sender instanceof Player player)) return true;
         Power pwr = Power.getFor(player);
 
-        if (pwr.checkPowerStatus() == 1) {
+        if (pwr.checkPowerStatus() == 1 && Login.isLoggedIn(Objects.requireNonNull(player.getPlayer()).getUniqueId())) {
             FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
             if (fs == null) {
                 sender.sendMessage("Filesystem unavailable");

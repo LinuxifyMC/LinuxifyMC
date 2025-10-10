@@ -2,7 +2,7 @@ package com.opuadm.linuxifymc;
 
 import com.opuadm.linuxifymc.commands.linuxifymc.VM;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
-import com.opuadm.linuxifymc.commands.cli.Shell;
+import com.opuadm.linuxifymc.machine.shell.Shell;
 import com.opuadm.linuxifymc.commands.linuxifymc.Settings;
 
 import org.bukkit.Bukkit;
@@ -45,6 +45,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         FakeFS.DB = database;
 
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new com.opuadm.linuxifymc.machine.login.LoginPrompt(this), this);
 
         Objects.requireNonNull(this.getCommand("cli")).setExecutor(new Shell());
         Objects.requireNonNull(this.getCommand("cli")).setTabCompleter(new Shell());

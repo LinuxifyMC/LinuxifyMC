@@ -1,4 +1,4 @@
-package com.opuadm.linuxifymc.commands.cli;
+package com.opuadm.linuxifymc.machine.shell;
 
 import java.util.List;
 
