@@ -19,6 +19,8 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class LinuxifyMC extends JavaPlugin implements Listener {
+    private com.opuadm.linuxifymc.machine.login.LoginPrompt loginPrompt;
+
     public static String version = "0.1.1";
     public static String kernelver = "0.1.1-generic";
     public static String kernelname = "LinuxifyMC Kernel";
@@ -45,7 +47,8 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         FakeFS.DB = database;
 
         getServer().getPluginManager().registerEvents(this, this);
-        getServer().getPluginManager().registerEvents(new com.opuadm.linuxifymc.machine.login.LoginPrompt(this), this);
+        this.loginPrompt = new com.opuadm.linuxifymc.machine.login.LoginPrompt(this);
+        getServer().getPluginManager().registerEvents(this.loginPrompt, this);
 
         Objects.requireNonNull(this.getCommand("cli")).setExecutor(new Shell());
         Objects.requireNonNull(this.getCommand("cli")).setTabCompleter(new Shell());
@@ -93,6 +96,23 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         plrFS.loadFS(uuid);
         if (isNew) plrFS.setupSysFiles();
         plrFS.upgradeFS(plrFS);
+
+        try {
+            if (database != null) {
+                database.executeUpdate(
+                        "INSERT OR IGNORE INTO vm_users (player_uuid, username) VALUES (?, ?)",
+                        uuid.toString(), player.getName());
+
+                database.executeUpdate(
+                        "INSERT OR IGNORE INTO vm_users (player_uuid, username) VALUES (?, ?)",
+                        uuid.toString(), "root");
+                database.executeUpdate(
+                        "INSERT OR IGNORE INTO vm_disabled_users (player_uuid, username) VALUES (?, ?)",
+                        uuid.toString(), "root");
+            }
+        } catch (Exception e) {
+            getLogger().warning("Failed to ensure vm_users/vm_disabled_users for " + player.getName() + ": " + e.getMessage());
+        }
     }
 
     @EventHandler
@@ -103,5 +123,9 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
             fs.saveFS(player, fs);
         }
         // FakeFS.removePlayerFS(player.getUniqueId());
+    }
+
+    public com.opuadm.linuxifymc.machine.login.LoginPrompt getLoginPrompt() {
+        return loginPrompt;
     }
 }

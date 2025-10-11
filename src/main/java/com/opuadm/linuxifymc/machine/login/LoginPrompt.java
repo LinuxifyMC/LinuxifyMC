@@ -62,6 +62,38 @@ public class LoginPrompt implements Listener {
                 return;
             }
 
+            com.opuadm.linuxifymc.Database db = null;
+            if (plugin instanceof com.opuadm.linuxifymc.LinuxifyMC l) {
+                db = l.getDatabase();
+            }
+
+            boolean userExists = false;
+            boolean userDisabled = false;
+            if (db != null) {
+                try {
+                    Object existsObj = db.singleValueQuery("SELECT 1 FROM vm_users WHERE player_uuid = ? AND username = ? LIMIT 1",
+                            player.getUniqueId().toString(), messageText);
+                    userExists = existsObj != null;
+
+                    Object disabledObj = db.singleValueQuery("SELECT 1 FROM vm_disabled_users WHERE player_uuid = ? AND username = ? LIMIT 1",
+                            player.getUniqueId().toString(), messageText);
+                    userDisabled = disabledObj != null;
+                } catch (Exception ignore) {
+                    userExists = false;
+                }
+            }
+
+            if (!userExists) {
+                player.sendMessage("Login failed: user does not exist on this machine. Try again. In-case you don't know the default login, it's literally your minecraft username.");
+                player.sendMessage("Login:");
+                return;
+            }
+
+            if (userDisabled) {
+                player.sendMessage("Login failed: user is disabled on this machine.");
+                player.sendMessage("Login:");
+                return;
+            }
             Login login = new Login(player);
             login.login();
 

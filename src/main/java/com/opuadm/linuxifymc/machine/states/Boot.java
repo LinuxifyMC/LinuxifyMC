@@ -86,5 +86,8 @@ public class Boot {
                 plr.sendMessage(errMsg);
             }
         }
+
+        com.opuadm.linuxifymc.LinuxifyMC plugin = org.bukkit.plugin.java.JavaPlugin.getPlugin(com.opuadm.linuxifymc.LinuxifyMC.class);
+        plugin.getLoginPrompt().prompt(plr);
     }
 }

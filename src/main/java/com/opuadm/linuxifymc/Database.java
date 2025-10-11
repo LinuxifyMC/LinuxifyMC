@@ -66,6 +66,16 @@ public class Database {
                         "disk_space_used INTEGER, " +
                         "disk_space_free INTEGER, " +
                         "current_dir TEXT)");
+
+                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS vm_users (" +
+                        "player_uuid TEXT NOT NULL, " +
+                        "username TEXT NOT NULL, " +
+                        "PRIMARY KEY (player_uuid, username))");
+
+                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS vm_disabled_users (" +
+                        "player_uuid TEXT NOT NULL, " +
+                        "username TEXT NOT NULL, " +
+                        "PRIMARY KEY (player_uuid, username))");
             }
 
             plugin.getLogger().info("Database initialized at: " + dbPath);
