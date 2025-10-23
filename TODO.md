@@ -7,4 +7,4 @@
 - Possibly a custom package manager (will be a part of non-linux-commands)
 - Some possible internet simulation (will also include IPv4 addresses and maybe possibly IPv6 addresses, including Local IPv4/Local IPv6)
 - /vm or /vmachine or /virtualmachine command for managing your LinuxifyMC "virtual machine" (not an actual virtual machine, just simulation)
-- Eventually make there be REAL binaries in /usr/bin containing REAL java code and possible creation of your own binaries
+- Eventually make there be REAL binaries in /usr/bin containing REAL java code and possible creation of your own binaries either using Java or a small custom interpreted lang.

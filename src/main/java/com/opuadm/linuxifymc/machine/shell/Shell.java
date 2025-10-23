@@ -5,6 +5,7 @@ import com.opuadm.linuxifymc.machine.fs.ConvertPerms;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.states.Power;
 import com.opuadm.linuxifymc.machine.login.Login;
+import com.opuadm.linuxifymc.commands.cli.cmds.Sudo;
 
 import net.kyori.adventure.text.Component;
 
@@ -92,7 +93,12 @@ public class Shell implements CommandExecutor, TabCompleter {
         for (String p : parts) {
             if (p.isBlank()) continue;
             String[] a = p.trim().split("\\s+");
-            if (!execSingle(sender, player, fs, a)) return false;
+            if (a.length > 0 && a[0].equalsIgnoreCase("sudo")) {
+                Sudo sudo = new Sudo();
+                if (!sudo.execute(sender, player, fs, a)) return false;
+                } else {
+                if (!execSingle(sender, player, fs, a)) return false;
+            }
         }
         return true;
     }
@@ -312,4 +318,125 @@ public class Shell implements CommandExecutor, TabCompleter {
         }
         return out;
     }
+
+    public record ElevatedSender(CommandSender delegate, Player player) implements CommandSender {
+
+        @Override
+            public void sendMessage(String message) {
+                delegate.sendMessage(message);
+            }
+
+            @Override
+            public void sendMessage(String[] messages) {
+                delegate.sendMessage(messages);
+            }
+
+            @Override
+            public void sendMessage(UUID uuid, String message) {
+                boolean match = player.getUniqueId().equals(uuid);
+                if (match) delegate.sendMessage(message);
+            }
+
+            @Override
+            public void sendMessage(UUID uuid, String... messages) {
+                boolean match = player.getUniqueId().equals(uuid);
+                if (match) delegate.sendMessage(messages);
+            }
+
+            @Override
+            public @NotNull Component name() {
+                return delegate.name();
+            }
+
+            @Override
+            public String getName() {
+                return delegate.getName();
+            }
+
+            @Override
+            public Server getServer() {
+                return delegate.getServer();
+            }
+
+            @Override
+            public Spigot spigot() {
+                return delegate.spigot();
+            }
+
+            @Override
+            public boolean isPermissionSet(String name) {
+                if (name == null) return true;
+                if (name.startsWith("linuxifymc.command.cli") || name.startsWith("linuxifymc.command")) return true;
+                return delegate.isPermissionSet(name);
+            }
+
+            @Override
+            public boolean isPermissionSet(Permission perm) {
+                if (perm == null) return true;
+                if (perm.getName().startsWith("linuxifymc.command.cli") || perm.getName().startsWith("linuxifymc.command"))
+                    return true;
+                return delegate.isPermissionSet(perm);
+            }
+
+            @Override
+            public boolean hasPermission(String name) {
+                if (name == null) return true;
+                if (name.startsWith("linuxifymc.command.cli") || name.startsWith("linuxifymc.command")) return true;
+                return delegate.hasPermission(name);
+            }
+
+            @Override
+            public boolean hasPermission(Permission perm) {
+                if (perm == null) return true;
+                if (perm.getName().startsWith("linuxifymc.command.cli") || perm.getName().startsWith("linuxifymc.command"))
+                    return true;
+                return delegate.hasPermission(perm);
+            }
+
+            @Override
+            public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value) {
+                return delegate.addAttachment(plugin, name, value);
+            }
+
+            @Override
+            public PermissionAttachment addAttachment(Plugin plugin) {
+                return delegate.addAttachment(plugin);
+            }
+
+            @Override
+            public PermissionAttachment addAttachment(Plugin plugin, String name, boolean value, int ticks) {
+                return delegate.addAttachment(plugin, name, value, ticks);
+            }
+
+            @Override
+            public PermissionAttachment addAttachment(Plugin plugin, int ticks) {
+                return delegate.addAttachment(plugin, ticks);
+            }
+
+            @Override
+            public void removeAttachment(PermissionAttachment attachment) {
+                delegate.removeAttachment(attachment);
+            }
+
+            @Override
+            public void recalculatePermissions() {
+                delegate.recalculatePermissions();
+            }
+
+            @Override
+            public Set<PermissionAttachmentInfo> getEffectivePermissions() {
+                return delegate.getEffectivePermissions();
+            }
+
+            @Override
+            public boolean isOp() {
+                return delegate.isOp();
+            }
+
+            @Override
+            public void setOp(boolean value) {
+
+            }
+        }
+
 }
