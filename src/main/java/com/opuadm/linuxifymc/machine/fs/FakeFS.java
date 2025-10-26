@@ -802,7 +802,8 @@ public class FakeFS {
             String parentGroup = (String) row.get(1);
             String parentPerms = (String) row.get(2);
 
-            if (!hasPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")) {
+            if (!hasPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")
+                    && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
                 logger.fine("E: getString: write permission denied for player=" + this.plr + " on parent=" + parentDir + " perms=" + parentPerms + " owner=" + parentOwner + " group=" + parentGroup);
                 return null;
             }
