@@ -22,13 +22,27 @@ public class LoginPrompt implements Listener {
         this.plugin = plugin;
     }
 
+    private static String decorateHostname(String host) {
+        if (host == null || host.isEmpty()) return host;
+        int[] cps = host.codePoints().toArray();
+        int len = cps.length;
+        cps[0] = Character.toUpperCase(cps[0]);
+        if (len >= 2) {
+            cps[len - 2] = Character.toUpperCase(cps[len - 2]);
+            cps[len - 1] = Character.toUpperCase(cps[len - 1]);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int cp : cps) sb.appendCodePoint(cp);
+        return sb.toString();
+    }
+
     public void prompt(Player player) {
         if (player == null) return;
         UUID u = player.getUniqueId();
         if (Login.isLoggedIn(u)) return;
 
         awaiting.add(u);
-        player.sendMessage(LinuxifyMC.hostname + " " + LinuxifyMC.version);
+        player.sendMessage(decorateHostname(LinuxifyMC.hostname) + " " + LinuxifyMC.version);
         player.sendMessage("Login:");
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
