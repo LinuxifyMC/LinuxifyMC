@@ -21,6 +21,8 @@ import java.util.UUID;
 public final class LinuxifyMC extends JavaPlugin implements Listener {
     private com.opuadm.linuxifymc.machine.login.LoginPrompt loginPrompt;
 
+    // public static final boolean debugMode = false;
+
     public static String version = "0.1.1";
     public static String kernelver = "0.1.1-generic";
     public static String kernelname = "LinuxifyMC Kernel";

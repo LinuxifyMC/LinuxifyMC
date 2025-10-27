@@ -394,6 +394,23 @@ public class FakeFS {
             long dirCount = cntObj instanceof Number ? ((Number) cntObj).longValue() : 0L;
             if (dirCount > 0) return;
 
+            String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
+            if (parent.isEmpty()) parent = "/";
+            var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), parent);
+            if (pr == null || pr.isEmpty()) {
+                logger.fine("E: makeDir: parent not found: " + parent);
+                return;
+            }
+            List<Object> prow = pr.getFirst();
+            String parentOwner = (String) prow.get(0);
+            String parentGroup = (String) prow.get(1);
+            String parentPerms = (String) prow.get(2);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: makeDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                return;
+            }
+
             DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
                     playerUuid.toString(), path, owner, defaultGroup, perms);
 
@@ -421,7 +438,26 @@ public class FakeFS {
             path = path == null ? null : path.replaceAll("/+", "/");
 
             path = getString(path);
-            if (path == null) return;
+            if (path == null) {
+                return;
+            }
+
+            String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "/";
+            if (parent.isEmpty()) parent = "/";
+            var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), parent);
+            if (pr == null || pr.isEmpty()) {
+                logger.fine("E: makeFile: parent not found: " + parent);
+                return;
+            }
+            List<Object> prow = pr.getFirst();
+            String parentOwner = (String) prow.get(0);
+            String parentGroup = (String) prow.get(1);
+            String parentPerms = (String) prow.get(2);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: makeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                return;
+            }
 
             if (owner == null || owner.isEmpty()) {
                 owner = this.plr != null ? this.plr.toLowerCase() : "root";
@@ -464,6 +500,22 @@ public class FakeFS {
             path = path.replaceAll("/+", "/");
             if (path.length() > 1 && path.endsWith("/")) path = path.substring(0, path.length() - 1);
 
+            String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "/";
+            if (parent.isEmpty()) parent = "/";
+            var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), parent);
+            if (pr == null || pr.isEmpty()) {
+                logger.fine("E: deleteFile: parent not found: " + parent);
+                return;
+            }
+            List<Object> prow = pr.getFirst();
+            String parentOwner = (String) prow.get(0);
+            String parentGroup = (String) prow.get(1);
+            String parentPerms = (String) prow.get(2);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: deleteFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                return;
+            }
             Object lenObj = DB.singleValueQuery("SELECT length(content) FROM fs_files WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
             long oldLen = (lenObj instanceof Number n) ? n.longValue() : 0L;
@@ -534,6 +586,22 @@ public class FakeFS {
             }
 
             if (recursive) {
+                String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "/";
+                if (parent.isEmpty()) parent = "/";
+                var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                        playerUuid.toString(), parent);
+                if (pr == null || pr.isEmpty()) {
+                    logger.fine("E: deleteDir: parent not found: " + parent);
+                    return;
+                }
+                List<Object> prow = pr.getFirst();
+                String parentOwner = (String) prow.get(0);
+                String parentGroup = (String) prow.get(1);
+                String parentPerms = (String) prow.get(2);
+                if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                    logger.fine("E: deleteDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                    return;
+                }
                 if (totalFilesSize > 0) {
                     adjustUserFileBytes(-totalFilesSize);
                 }
@@ -636,6 +704,22 @@ public class FakeFS {
                 return;
             }
             path = path.replaceAll("/+", "/");
+            String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
+            if (parent.isEmpty()) parent = "/";
+            var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), parent);
+            if (pr == null || pr.isEmpty()) {
+                logger.fine("E: writeFile: parent not found: " + parent);
+                return;
+            }
+            List<Object> prow = pr.getFirst();
+            String parentOwner = (String) prow.get(0);
+            String parentGroup = (String) prow.get(1);
+            String parentPerms = (String) prow.get(2);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: writeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                return;
+            }
             txWriteFile(path, content, false);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while writing to the file: " + e.getMessage(), e);
@@ -658,6 +742,22 @@ public class FakeFS {
                 logger.warning("E: File not found or could not be updated: " + path);
                 return;
             }
+            String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "/";
+            if (parent.isEmpty()) parent = "/";
+            var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), parent);
+            if (pr == null || pr.isEmpty()) {
+                logger.fine("E: appendFile: parent not found: " + parent);
+                return;
+            }
+            List<Object> prow = pr.getFirst();
+            String parentOwner = (String) prow.get(0);
+            String parentGroup = (String) prow.get(1);
+            String parentPerms = (String) prow.get(2);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: appendFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                return;
+            }
             txWriteFile(path, content, true);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while appending to the file: " + e.getMessage(), e);
@@ -667,12 +767,16 @@ public class FakeFS {
     // Permissions / Ownership
     public boolean hasPermissions(String perms, String owner, String group, String subject, String requiredPerm) {
         if (perms == null || perms.length() != 3) return false;
-        int idx = 2;
+
+        int idx;
         if (subject != null && subject.equalsIgnoreCase(owner)) {
             idx = 0;
-        } else if (group != null && !group.isEmpty()) {
+        } else if (subject != null && subject.equalsIgnoreCase(group)) {
             idx = 1;
+        } else {
+            idx = 2;
         }
+
         int digit = perms.charAt(idx) - '0';
         return switch (requiredPerm) {
             case "r" -> (digit & 4) != 0;
@@ -680,6 +784,10 @@ public class FakeFS {
             case "x" -> (digit & 1) != 0;
             default -> false;
         };
+    }
+
+    public boolean lacksPermissions(String perms, String owner, String group, String subject, String requiredPerm) {
+        return !hasPermissions(perms, owner, group, subject, requiredPerm);
     }
 
     public void changePermissions(String path, String newPerms) {
@@ -705,6 +813,25 @@ public class FakeFS {
             long fileCount = 0;
             if (fileRes != null && !fileRes.isEmpty()) {
                 fileCount = ((Number) fileRes.getFirst().getFirst()).longValue();
+            }
+
+            String curOwner = null;
+            String curGroup = null;
+            String curPerms = null;
+            var metaRes = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ? " +
+                            "UNION ALL SELECT owner, group_name, permissions FROM fs_files WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path, playerUuid.toString(), path);
+            if (metaRes != null && !metaRes.isEmpty()) {
+                var meta = metaRes.getFirst();
+                curOwner = meta.get(0) != null ? meta.get(0).toString() : null;
+                curGroup = meta.get(1) != null ? meta.get(1).toString() : null;
+                curPerms = meta.get(2) != null ? meta.get(2).toString() : null;
+            }
+
+            if ((curPerms == null || lacksPermissions(curPerms, curOwner, curGroup, this.plr, "w"))
+                    && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: changePermissions: permission denied for player=" + this.plr + " path=" + path);
+                return;
             }
 
             if (dirCount > 0) {
@@ -748,6 +875,17 @@ public class FakeFS {
             long fileCount = 0;
             if (fileRes != null && !fileRes.isEmpty()) {
                 fileCount = ((Number) fileRes.getFirst().getFirst()).longValue();
+            }
+
+            var ownerRes = DB.query("SELECT owner FROM fs_dirs WHERE player_uuid = ? AND path = ? UNION ALL SELECT owner FROM fs_files WHERE player_uuid = ? AND path = ?",
+                    playerUuid.toString(), path, playerUuid.toString(), path);
+            String curOwner = null;
+            if (ownerRes != null && !ownerRes.isEmpty()) {
+                curOwner = ownerRes.getFirst().getFirst().toString();
+            }
+            if ((curOwner == null || !curOwner.equalsIgnoreCase(this.plr)) && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
+                logger.fine("E: changeOwner: permission denied for player=" + this.plr + " path=" + path);
+                return;
             }
 
             if (dirCount > 0) {
@@ -802,7 +940,7 @@ public class FakeFS {
             String parentGroup = (String) row.get(1);
             String parentPerms = (String) row.get(2);
 
-            if (!hasPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")
                     && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
                 logger.fine("E: getString: write permission denied for player=" + this.plr + " on parent=" + parentDir + " perms=" + parentPerms + " owner=" + parentOwner + " group=" + parentGroup);
                 return null;
