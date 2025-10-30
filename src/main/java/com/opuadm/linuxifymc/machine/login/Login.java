@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Login {
     private final Player player;
-    private final String[] users;
+    private String[] users;
     private int currentUserIndex;
 
     private static final Map<UUID, Login> sessions = new ConcurrentHashMap<>();
@@ -73,5 +73,27 @@ public class Login {
             return null;
         }
         return users[currentUserIndex];
+    }
+
+    public static Login getSession(UUID uuid) {
+        if (uuid == null) return null;
+        return sessions.get(uuid);
+    }
+
+    public static void setSession(UUID uuid, Login login) {
+        if (uuid == null) return;
+        if (login == null) {
+            sessions.remove(uuid);
+        } else {
+            sessions.put(uuid, login);
+        }
+    }
+
+    public void setUsers(String[] users) {
+        this.users = (users != null) ? users.clone() : new String[] { "root" };
+    }
+
+    public void setCurrentUserIndex(int idx) {
+        this.currentUserIndex = idx;
     }
 }

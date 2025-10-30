@@ -19,7 +19,9 @@ public class ShellVars
             "neofetch",
             "echo",
             "touch",
-            "sudo"
+            "sudo",
+            "su",
+            "exit"
     };
 
     public static List<String> LsOpts() {

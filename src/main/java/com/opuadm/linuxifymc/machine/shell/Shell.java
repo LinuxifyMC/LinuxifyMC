@@ -136,7 +136,13 @@ public class Shell implements CommandExecutor, TabCompleter {
     }
 
     private String prompt(Player p, FakeFS fs) {
-        return p.getName().toLowerCase() + "@" + LinuxifyMC.hostname + ":" + fs.getCurrentDir() + "$ ";
+        String user = p.getName().toLowerCase();
+        com.opuadm.linuxifymc.machine.login.Login session = com.opuadm.linuxifymc.machine.login.Login.getSession(p.getUniqueId());
+        if (session != null) {
+            String curUser = session.getCurrentUser();
+            if (curUser != null && !curUser.isEmpty()) user = curUser.toLowerCase();
+        }
+        return user + "@" + com.opuadm.linuxifymc.LinuxifyMC.hostname + ":" + fs.getCurrentDir() + "$ ";
     }
 
     private String normalizeRedirectPath(String path, String user) {
