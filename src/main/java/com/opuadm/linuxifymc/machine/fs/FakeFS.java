@@ -670,9 +670,15 @@ public class FakeFS {
 
     public String listCurrentDir(String path, boolean showHidden, boolean showDetails) {
         if (playerUuid == null) return "";
-        String d = (path == null || path.isEmpty()) ? CurDir : path;
+        String d;
+        if (path == null || path.isEmpty()) {
+            d = CurDir;
+        } else {
+            Deque<String> stack = getStrings(path);
+            d = "/" + String.join("/", stack);
+            if (d.length() > 1 && d.endsWith("/")) d = d.substring(0, d.length() - 1);
+        }
         d = d == null || d.isEmpty() ? "/" : d.replaceAll("/+", "/");
-        if (d.length() > 1 && d.endsWith("/")) d = d.substring(0, d.length() - 1);
         String like = d.equals("/") ? "/%" : d + "/%";
         String notLike = d.equals("/") ? "/%/%" : d + "/%/%";
         var rows = DB.query(

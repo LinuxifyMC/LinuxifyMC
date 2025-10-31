@@ -4,6 +4,7 @@ import com.opuadm.linuxifymc.Database;
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
+import com.opuadm.linuxifymc.machine.shell.SudoContext;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -76,6 +77,9 @@ public class Su {
 
             previous.put(player.getUniqueId(), player.getName());
 
+            if ("root".equalsIgnoreCase(target)) {
+                SudoContext.enter();
+            }
             if (fs != null) {
                 String cur = fs.getCurrentDir();
                 String home = "/home/" + target;
