@@ -23,7 +23,7 @@ public class Touch {
         try {
             LOG.fine("touch: user=" + player.getName() + " path=" + fileName + " cwd=" + fs.getCurrentDir());
             fs.makeFile(fileName, player.getName(), "777", "");
-            sender.sendMessage("File touched: " + fileName);
+            sender.sendMessage("");
             LOG.fine("touch: finished makeFile for " + fileName);
         } catch (Exception e) {
             sender.sendMessage(LinuxifyMC.shellname + ": touch: Failed to touch file '" + fileName + "'");

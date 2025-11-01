@@ -455,7 +455,7 @@ public class FakeFS {
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
                 logger.fine("E: makeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 return;
             }

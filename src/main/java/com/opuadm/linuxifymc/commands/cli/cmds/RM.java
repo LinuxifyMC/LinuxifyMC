@@ -9,9 +9,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class RM {
+    private static final Logger LOG = Logger.getLogger("LinuxifyMC");
+
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         boolean recursive = false;
         boolean force = false;
@@ -69,18 +72,24 @@ public class RM {
         if (dirPath != null && fileContent == null) {
             boolean passRecursive = recursive || force;
             try {
+                LOG.fine("rm: user=" + player.getName() + " path=" + path + " cwd=" + fs.getCurrentDir());
                 fs.deleteDir(normPath, passRecursive, force);
+                LOG.fine("rm: finished deleteDir for " + normPath);
             } catch (Exception e) {
                 if (!force) sender.sendMessage(LinuxifyMC.shellname + ": rm: " + path + ": Failed to remove");
+                LOG.warning("rm: exception while deleting dir " + normPath + ": " + e.getMessage());
             }
             return true;
         }
 
         if (fileContent != null) {
             try {
+                LOG.fine("rm: user=" + player.getName() + " path=" + path + " cwd=" + fs.getCurrentDir());
                 fs.deleteFile(normPath);
+                LOG.fine("rm: finished deleteFile for " + normPath);
             } catch (Exception e) {
                 if (!force) sender.sendMessage(LinuxifyMC.shellname + ": rm: " + path + ": Failed to remove");
+                LOG.warning("rm: exception while deleting file " + normPath + ": " + e.getMessage());
             }
             return true;
         }
