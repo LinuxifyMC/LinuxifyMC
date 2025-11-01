@@ -2,6 +2,7 @@ package com.opuadm.linuxifymc.commands.cli.cmds;
 
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.machine.login.Login;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -15,6 +16,15 @@ public class Chmod {
         }
         String permissions = args[1];
         String path = args[2];
+
+        String userForHome = player.getName();
+        var session = Login.getSession(player.getUniqueId());
+        if (session != null && session.getCurrentUser() != null && !session.getCurrentUser().isEmpty()) {
+            userForHome = session.getCurrentUser();
+        }
+        if (path.startsWith("~")) {
+            path = path.replaceFirst("~", "/home/" + userForHome);
+        }
 
         try {
             fs.changePermissions(path, permissions);

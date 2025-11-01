@@ -710,7 +710,14 @@ public class FakeFS {
                 logger.warning("E: Path cannot be null or empty.");
                 return;
             }
+            if (!path.startsWith("/")) {
+                String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
+                path = (base.equals("/") ? "" : base) + "/" + path;
+            }
             path = path.replaceAll("/+", "/");
+            path = getString(path);
+            if (path == null) return;
+
             String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "";
             if (parent.isEmpty()) parent = "/";
             var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
@@ -740,7 +747,14 @@ public class FakeFS {
                 logger.warning("E: Path cannot be null or empty.");
                 return;
             }
+
+            if (!path.startsWith("/")) {
+                String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
+                path = (base.equals("/") ? "" : base) + "/" + path;
+            }
             path = path.replaceAll("/+", "/");
+            path = getString(path);
+            if (path == null) return;
 
             Object existsCnt = DB.singleValueQuery("SELECT COUNT(*) FROM fs_files WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);

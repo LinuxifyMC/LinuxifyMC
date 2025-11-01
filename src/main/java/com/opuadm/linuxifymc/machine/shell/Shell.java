@@ -1,7 +1,5 @@
 package com.opuadm.linuxifymc.machine.shell;
 
-import com.opuadm.linuxifymc.LinuxifyMC;
-import com.opuadm.linuxifymc.machine.fs.ConvertPerms;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.states.Power;
 import com.opuadm.linuxifymc.machine.login.Login;
@@ -61,6 +59,7 @@ public class Shell implements CommandExecutor, TabCompleter {
         if (args.length == 0) return true;
 
         String full = String.join(" ", args);
+        String originalFull = full;
         boolean redirect = full.contains(" > ") || full.contains(" >> ");
         boolean append = full.contains(" >> ");
         String target = null;
@@ -72,7 +71,7 @@ public class Shell implements CommandExecutor, TabCompleter {
             args = full.split("\\s+");
         }
 
-        sender.sendMessage(prompt(player, fs) + full);
+        sender.sendMessage(prompt(player, fs) + originalFull);
 
         StringBuilder buf = new StringBuilder();
         CommandSender eff = redirect ? new OutputCapturingSender(sender, player, buf) : sender;
@@ -83,7 +82,7 @@ public class Shell implements CommandExecutor, TabCompleter {
 
         if (redirect) {
             if (append) fs.appendFile(target, buf.toString());
-            else fs.makeFile(target, player.getName(), ConvertPerms.symbolicToOctal("777"), buf.toString());
+            else fs.makeFile(target, player.getName(), "777", buf.toString());
         }
         return success;
     }
