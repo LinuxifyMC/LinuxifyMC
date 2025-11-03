@@ -80,6 +80,7 @@ public class Su {
             if ("root".equalsIgnoreCase(target)) {
                 SudoContext.enter();
             }
+
             if (fs != null) {
                 String cur = fs.getCurrentDir();
                 String home = "/home/" + target;

@@ -62,8 +62,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         getLogger().info("LinuxifyMC has been enabled. Version: " + version);
         if (!Bukkit.getVersion().contains("1.21")) {
             getLogger().info("NOTE: You are running a version which isn't an 1.21.x version. Please note that this plugin may not work under other versions of Minecraft that aren't 1.21.x, so proceed with caution.");
-            getLogger().info("NOTE: LinuxifyMC native Minecraft version is 1.21.4.");
-            getLogger().info("NOTE: Currently tested versions are 1.21.4.");
+            getLogger().info("NOTE: Current Native Version is 1.21.4.");
             getLogger().info("Current Version:" + Bukkit.getVersion());
         }
 

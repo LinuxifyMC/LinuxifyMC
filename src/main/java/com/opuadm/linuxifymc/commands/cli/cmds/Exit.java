@@ -3,6 +3,8 @@ package com.opuadm.linuxifymc.commands.cli.cmds;
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
+import com.opuadm.linuxifymc.machine.shell.SudoContext;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -10,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Arrays;
 import java.util.UUID;
 
+@SuppressWarnings("unused")
 public class Exit {
     public static boolean run(Player player, FakeFS fs) {
         if (player == null) return false;
@@ -34,6 +37,12 @@ public class Exit {
                 Login.setSession(u, restored);
                 Su.removePreviousUser(u);
 
+                if ("root".equalsIgnoreCase(prev)) {
+                    SudoContext.enter();
+                } else {
+                    SudoContext.exit();
+                }
+
                 if (fs != null) {
                     try {
                         fs.setCurrentDir("/home/" + prev);
@@ -45,6 +54,8 @@ public class Exit {
             }
 
             Login.setSession(u, null);
+
+            SudoContext.exit();
 
             if (fs != null) {
                 fs.saveFS(player, fs);

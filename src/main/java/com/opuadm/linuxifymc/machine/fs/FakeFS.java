@@ -35,7 +35,6 @@ public class FakeFS {
 
     private static final ConcurrentHashMap<UUID, FakeFS> PLAYER_FS = new ConcurrentHashMap<>();
 
-    @SuppressWarnings("FieldMayBeFinal")
     public String CurDir;
 
     private String plr;
