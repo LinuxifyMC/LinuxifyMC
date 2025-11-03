@@ -10,4 +10,4 @@
 - Eventually make there be REAL binaries in /usr/bin containing REAL java code and possible creation of your own binaries either using Java or a small custom interpreted lang.
 
 # Quick TODO (TODOs that will be done before the other TODOs, so I won't forget to do these)
-- Fix not being able to execute commands after rejoining, neither be able to start up the virtual computer
+- Fix not being able to execute commands after rejoining, neither being able to start up the virtual computer

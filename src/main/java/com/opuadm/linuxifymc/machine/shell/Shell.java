@@ -35,7 +35,7 @@ public class Shell implements CommandExecutor, TabCompleter {
         if (!(sender instanceof Player player)) return true;
         Power pwr = Power.getFor(player);
 
-        if (pwr.checkPowerStatus() == 1 && Login.isLoggedIn(Objects.requireNonNull(player.getPlayer()).getUniqueId())) {
+        if (pwr.checkPowerStatus() == 1 || Login.isLoggedIn(Objects.requireNonNull(player.getPlayer()).getUniqueId())) {
             FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
             if (fs == null) {
                 sender.sendMessage("Filesystem unavailable");

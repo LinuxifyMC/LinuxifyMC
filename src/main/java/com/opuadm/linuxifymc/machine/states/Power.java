@@ -1,6 +1,7 @@
 package com.opuadm.linuxifymc.machine.states;
 
 import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -57,7 +58,7 @@ public class Power {
             isOff = false;
             isBooting = true;
 
-            org.bukkit.entity.Player p = org.bukkit.Bukkit.getPlayer(playerId);
+            Player p = Bukkit.getPlayer(playerId);
 
             if (p == null) {
                 isBooting = false;
@@ -70,16 +71,20 @@ public class Power {
         return 0;
     }
 
-    public Serializable TurnOff() {
-        if (isOff) {
-            return "E: The machine is already off!";
-        } else if (isBooting) {
-            return "E: The machine is currently booting!";
-        } else {
+    public void TurnOff() {
+        if (isOff) return;
+
+        if (isBooting) {
+            isBooting = false;
             isOn = false;
             isOff = true;
+            try { registry.remove(playerId); } catch (Exception ignored) {}
+            return;
         }
-        return 0;
+
+        isOn = false;
+        isOff = true;
+        try { registry.remove(playerId); } catch (Exception ignored) {}
     }
 
     public synchronized void ChangeStateVar(Integer status) {

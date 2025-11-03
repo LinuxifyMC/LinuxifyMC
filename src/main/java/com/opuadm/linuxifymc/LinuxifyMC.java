@@ -4,6 +4,7 @@ import com.opuadm.linuxifymc.commands.linuxifymc.VM;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.shell.Shell;
 import com.opuadm.linuxifymc.commands.linuxifymc.Settings;
+import com.opuadm.linuxifymc.machine.states.Power;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -123,7 +124,12 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         if (fs != null && database != null) {
             fs.saveFS(player, fs);
         }
-        // FakeFS.removePlayerFS(player.getUniqueId());
+
+        try {
+            Power.getFor(player.getUniqueId()).TurnOff();
+        } catch (Exception e) {
+            getLogger().warning("Failed to fully shutdown VM for " + player.getName() + ": " + e.getMessage());
+        }
     }
 
     public com.opuadm.linuxifymc.machine.login.LoginPrompt getLoginPrompt() {
