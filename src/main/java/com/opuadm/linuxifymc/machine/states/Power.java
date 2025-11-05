@@ -5,12 +5,14 @@ import org.bukkit.Bukkit;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 public class Power {
+    private static final Logger logger = Logger.getLogger(Power.class.getName());
+
     private final UUID playerId;
     private boolean isOn = false;
     private boolean isOff = true;
@@ -49,26 +51,31 @@ public class Power {
         }
     }
 
-    public Serializable TurnOn() {
+    public void TurnOn() {
+        Player p = Bukkit.getPlayer(playerId);
+
         if (isOn) {
-            return "E: The machine is already on!";
-        } else if (isBooting) {
-            return "E: The machine is currently booting!";
-        } else {
-            isOff = false;
-            isBooting = true;
-
-            Player p = Bukkit.getPlayer(playerId);
-
-            if (p == null) {
-                isBooting = false;
-                isOff = true;
-                return "E: Player not online to boot the machine.";
-            }
-
-            Boot.Init(p);
+            if (p != null) p.sendMessage("E: The machine is already on!");
+            return;
         }
-        return 0;
+
+        if (isBooting) {
+            if (p != null) p.sendMessage("E: The machine is currently booting!");
+            return;
+        }
+
+        isOff = false;
+        isBooting = true;
+
+        if (p == null) {
+            isBooting = false;
+            isOff = true;
+            logger.warning("E: Player " + playerId + " not online to boot the machine.");
+            return;
+        }
+
+        p.sendMessage("Starting boot...");
+        Boot.Init(p);
     }
 
     public void TurnOff() {
@@ -78,13 +85,11 @@ public class Power {
             isBooting = false;
             isOn = false;
             isOff = true;
-            try { registry.remove(playerId); } catch (Exception ignored) {}
             return;
         }
 
         isOn = false;
         isOff = true;
-        try { registry.remove(playerId); } catch (Exception ignored) {}
     }
 
     public synchronized void ChangeStateVar(Integer status) {
