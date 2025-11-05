@@ -12,5 +12,5 @@ jobs:
       - run: mvn clean package
       - uses: actions/upload-artifact@v4
         with:
-          name: plugin-jar
+          name: linuxifymc-jar
           path: target/*.jar
