@@ -34,36 +34,51 @@ public class Neofetch {
                 LinuxifyMC.shellname + " " + LinuxifyMC.shellver + " (Minecraft)",
                 "Current Player: " + player.getName()
         };
+
         int artColumnWidth = 0;
         for (String s : art) if (s.length() > artColumnWidth) artColumnWidth = s.length();
+
         int infoMaxLen = 0;
         for (String s : info) if (s.length() > infoMaxLen) infoMaxLen = s.length();
+
         int fixedTotalWidth = 80;
-        if (fixedTotalWidth < infoMaxLen) fixedTotalWidth = infoMaxLen + 2;
+        if (fixedTotalWidth < infoMaxLen + 1) fixedTotalWidth = infoMaxLen + 1;
+
         boolean isPlayer = sender instanceof Player;
         Key uniform = Key.key("minecraft", "uniform");
+
+        final String FIGURE_SPACE = "\u2007";
+
         for (int i = 0; i < art.length; i++) {
             String artLine = art[i];
-            if (artLine.length() < artColumnWidth) {
-                StringBuilder sb = new StringBuilder(artLine);
-                while (sb.length() < artColumnWidth) sb.append(' ');
-                artLine = sb.toString();
-            } else if (artLine.length() > artColumnWidth) {
-                artLine = artLine.substring(0, artColumnWidth);
-            }
+            artLine = artLine.replaceAll("[\\r\\n]+$", "");
+
             String infoLine = i < info.length ? info[i] : "";
-            int spacesNeeded = fixedTotalWidth - infoLine.length();
-            if (spacesNeeded < artColumnWidth + 1) spacesNeeded = artColumnWidth + 1;
-            StringBuilder spacer = new StringBuilder();
-            spacer.append(" ".repeat(Math.max(0, spacesNeeded - artLine.length())));
+
+            int infoLen = infoLine.length();
+            int infoStart = fixedTotalWidth - infoLen;
+
+            if (infoStart < 1) infoStart = 1;
+
+            String artForOutput = artLine;
+            if (artForOutput.length() > infoStart - 1) {
+                artForOutput = artForOutput.substring(0, Math.max(0, infoStart - 1));
+            }
+
+            int padCount = infoStart - artForOutput.length();
+            if (padCount < 1) padCount = 1;
+
             if (isPlayer) {
-                Component artComp = Component.text(artLine).font(uniform);
+                String spacer = FIGURE_SPACE.repeat(padCount);
+                Component artComp = Component.text(artForOutput).font(uniform);
                 Component infoComp = Component.text(spacer + infoLine);
                 player.sendMessage(artComp.append(infoComp));
             } else {
-                sender.sendMessage(artLine + spacer + infoLine);
+                String spacer = " ".repeat(padCount);
+                sender.sendMessage(artForOutput + spacer + infoLine);
             }
         }
+
         return true;
     }
 }
