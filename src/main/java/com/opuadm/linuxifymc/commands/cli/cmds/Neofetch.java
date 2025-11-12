@@ -23,7 +23,7 @@ public class Neofetch {
                 "  ######%#=~~~~~~=@@@%%%%%% ",
                 "  ####%%*+=~~~~~~=@@%%%%%%@ ",
                 "  ####+####+%~~~~=##=*%%%%% ",
-                "  ####*==##=***%%==+*#%%%%@ ",
+                "  ####*==##=***%%==+*#%%%%% ",
                 "    ##########%%%%%%%%%%    ",
                 "         #####%%%%%%        ",
                 "            #%%%            "
@@ -38,8 +38,7 @@ public class Neofetch {
 
         int chatWidthPixels = 320;
         int uniformCharWidth = 6;
-        int defaultCharWidth = 6;
-        int artWidth = 28;
+        int totalChars = chatWidthPixels / uniformCharWidth;
 
         boolean isPlayer = sender instanceof Player;
         Key uniform = Key.key("minecraft", "uniform");
@@ -48,20 +47,19 @@ public class Neofetch {
             String artLine = art[i];
             String infoLine = i < info.length ? info[i] : "";
 
+            int artChars = artLine.length();
+            int infoChars = infoLine.length();
+            int infoStartPos = totalChars - infoChars;
+            int spacerChars = infoStartPos - artChars;
+
             if (isPlayer) {
-                int artPixels = artWidth * uniformCharWidth;
-                int infoPixels = infoLine.length() * defaultCharWidth;
-                int usedPixels = artPixels + infoPixels;
-                int remainingPixels = chatWidthPixels - usedPixels;
-                int paddingChars = Math.max(0, remainingPixels / uniformCharWidth);
-
                 Component artComp = Component.text(artLine).font(uniform);
-                Component spacerComp = Component.text(" ".repeat(paddingChars)).font(uniform);
-                Component infoComp = Component.text(infoLine);
-
+                Component spacerComp = Component.text(" ".repeat(Math.max(0, spacerChars))).font(uniform);
+                Component infoComp = Component.text(infoLine).font(uniform);
                 player.sendMessage(artComp.append(spacerComp).append(infoComp));
             } else {
-                sender.sendMessage(artLine + " ".repeat(Math.max(0, 53 - artWidth - infoLine.length())) + infoLine);
+                int pad = Math.max(0, infoStartPos - artChars);
+                sender.sendMessage(artLine + " ".repeat(pad) + infoLine);
             }
         }
 
