@@ -36,9 +36,14 @@ public class Neofetch {
                 "Current Player: " + player.getName()
         };
 
-        int chatWidthPixels = 320;
-        int uniformCharWidth = 6;
-        int totalChars = chatWidthPixels / uniformCharWidth;
+        int longestInfo = 0;
+        for (String line : info) {
+            longestInfo = Math.max(longestInfo, line.length());
+        }
+
+        int CHAT_WIDTH = 75;
+
+        int INFO_START = CHAT_WIDTH - longestInfo;
 
         boolean isPlayer = sender instanceof Player;
         Key uniform = Key.key("minecraft", "uniform");
@@ -47,22 +52,26 @@ public class Neofetch {
             String artLine = art[i];
             String infoLine = i < info.length ? info[i] : "";
 
-            int artChars = artLine.length();
-            int infoChars = infoLine.length();
-            int infoStartPos = totalChars - infoChars;
-            int spacerChars = infoStartPos - artChars;
+            String paddedInfo = String.format("%-" + longestInfo + "s", infoLine);
 
             if (isPlayer) {
-                Component artComp = Component.text(artLine).font(uniform);
-                Component spacerComp = Component.text(" ".repeat(Math.max(0, spacerChars))).font(uniform);
-                Component infoComp = Component.text(infoLine).font(uniform);
-                player.sendMessage(artComp.append(spacerComp).append(infoComp));
+                StringBuilder fullLine = new StringBuilder();
+                fullLine.append(artLine);
+
+                int currentPos = artLine.length();
+                int spacesNeeded = INFO_START - currentPos;
+
+                fullLine.append(" ".repeat(Math.max(0, spacesNeeded)));
+
+                fullLine.append(paddedInfo);
+
+                player.sendMessage(Component.text(fullLine.toString()).font(uniform));
             } else {
-                int pad = Math.max(0, infoStartPos - artChars);
-                sender.sendMessage(artLine + " ".repeat(pad) + infoLine);
+                int currentPos = artLine.length();
+                int spacesNeeded = INFO_START - currentPos;
+                sender.sendMessage(artLine + " ".repeat(Math.max(0, spacesNeeded)) + paddedInfo);
             }
         }
-
         return true;
     }
 }
