@@ -10,7 +10,7 @@ If you wonder why you cannot execute commands using `/cli <command>` directly li
 # Notes
 This plugin does not mimic the Linux terminal perfectly, but it does give you an experience of using a linux terminal in Minecraft. If you want to make this plugin more realistic, try contributing atleast.
 
-This plugin has currently been tested on Paper 1.21.4. Paper 1.21.8 is planned to be the native version for this plugin soon (but will be tested on Purpur 1.21.8).
+This plugin has currently been tested on Paper 1.21.4. Starting from LinuxifyMC 0.1.1.1, the native version will be Paper 1.21.8 (instead of 1.21.4).
 
 If you want to know what things are planned to be done, check out TODO.md. If you want to know about how you can contribute to this project correctly, visit CONTRIBUTING.md.
 
