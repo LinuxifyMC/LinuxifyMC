@@ -14,3 +14,11 @@ body:
       placeholder: "A description of what the bug is. This includes how to reproduce it."
     validations:
       required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or Commit Hash
+      description: Version you are using (e.g. 0.1.1) or full commit hash if built from source
+      placeholder: 0.1.1, abcdef1234567890...
+    validations:
+      required: true
