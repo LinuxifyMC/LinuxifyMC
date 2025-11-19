@@ -79,17 +79,53 @@ public class Power {
     }
 
     public void TurnOff() {
-        if (isOff) return;
+        Player p = Bukkit.getPlayer(playerId);
+
+        if (isOff) {
+            if (p != null) p.sendMessage("E: The machine is already off!");
+            return;
+        }
 
         if (isBooting) {
             isBooting = false;
             isOn = false;
             isOff = true;
+            if (p != null) p.sendMessage("Boot aborted. Machine is now off.");
+            try { ChangeStateVar(0); } catch (Exception ignore) {}
             return;
         }
 
         isOn = false;
         isOff = true;
+
+        try {
+            if (p != null) {
+                p.sendMessage("Shutting down virtual machine...");
+
+                try {
+                    new com.opuadm.linuxifymc.machine.login.Login(p).logout();
+                } catch (Exception e) {
+                    logger.fine("I: Failed to logout VM session for " + p.getName() + ": " + e.getMessage());
+                }
+
+                try {
+                    com.opuadm.linuxifymc.machine.fs.FakeFS fs = com.opuadm.linuxifymc.machine.fs.FakeFS.getPlayerFS(playerId, p.getName());
+                    if (fs != null) {
+                        if (!fs.saveFS(p, fs)) {
+                            p.sendMessage("Warning: Failed to save filesystem state");
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.warning("E: Failed to save filesystem for " + p.getName() + ": " + e.getMessage());
+                }
+            } else {
+                logger.info("I: Player " + playerId + " not online while shutting down VM. State marked off.");
+            }
+        } catch (Exception e) {
+            logger.warning("E: Exception during VM shutdown for " + playerId + ": " + e.getMessage());
+        } finally {
+            try { ChangeStateVar(0); } catch (Exception ignore) {}
+        }
     }
 
     public synchronized void ChangeStateVar(Integer status) {

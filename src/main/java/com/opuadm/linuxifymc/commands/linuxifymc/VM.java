@@ -23,8 +23,16 @@ public class VM implements CommandExecutor, TabCompleter {
             if (!(sender instanceof Player player)) {
                 sender.sendMessage("E: Only players can start a virtual computer. Are you executing this command from the console?");
                 return true;
+            } else {
+                Power.getFor(player).TurnOn();
             }
-            Power.getFor(player).TurnOn();
+        } else if (args.length == 1 && args[0].equals("stop")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("E: Only players can stop a virtual computer. Are you executing this command from the console?");
+            } else {
+                Power.getFor(player).TurnOff();
+                try { Power.removeFor(player.getUniqueId()); } catch (Exception ignore) {}
+            }
         }
         return true;
     }

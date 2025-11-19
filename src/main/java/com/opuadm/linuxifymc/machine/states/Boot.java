@@ -6,6 +6,7 @@ import com.opuadm.linuxifymc.machine.logs.Levels;
 import com.opuadm.linuxifymc.LinuxifyMC;
 
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.text.MessageFormat;
 
@@ -87,7 +88,7 @@ public class Boot {
             }
         }
 
-        com.opuadm.linuxifymc.LinuxifyMC plugin = org.bukkit.plugin.java.JavaPlugin.getPlugin(com.opuadm.linuxifymc.LinuxifyMC.class);
+        LinuxifyMC plugin = JavaPlugin.getPlugin(LinuxifyMC.class);
         plugin.getLoginPrompt().prompt(plr);
     }
 }

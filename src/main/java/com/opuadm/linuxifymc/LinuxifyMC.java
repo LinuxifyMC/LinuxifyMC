@@ -80,6 +80,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
                     fs.saveFS(player, fs);
                     // FakeFS.removePlayerFS(player.getUniqueId());
                 }
+                try { Power.removeFor(player.getUniqueId()); } catch (Exception ignore) {}
             }
             database.close();
             FakeFS.DB = null;
@@ -129,6 +130,8 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
             Power.getFor(player.getUniqueId()).TurnOff();
         } catch (Exception e) {
             getLogger().warning("Failed to fully shutdown VM for " + player.getName() + ": " + e.getMessage());
+        } finally {
+            try { Power.removeFor(player.getUniqueId()); } catch (Exception ignore) {}
         }
     }
 
