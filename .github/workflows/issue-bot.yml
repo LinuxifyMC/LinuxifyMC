@@ -1,0 +1,87 @@
+name: Outdated Version Check
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            async function run() {
+              let body = github.context.payload.issue?.body || (await github.rest.issues.get({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                issue_number: github.context.payload.issue.number
+              })).data.body;
+
+              const match = body.match(/\*\*Version or Commit Hash:\*\*\s*([^\n]+)/i);
+              if (!match) return;
+
+              const reported = match[1].trim();
+              const isCommit = /^[0-9a-fA-F]{40}$/.test(reported);
+
+              const owner = github.context.repo.owner;
+              const repo = github.context.repo.repo;
+              const issue_number = github.context.payload.issue?.number || github.context.payload.issue.number;
+              const path = "src/main/java/com/opuadm/linuxifymc/LinuxifyMC.java";
+
+              const getVersion = async (ref) => {
+                try {
+                  const {data} = await github.rest.repos.getContent({owner, repo, path, ref});
+                  const content = Buffer.from(data.content, "base64").toString("utf-8");
+                  const m = content.match(/public static String version = "([^"]+)";/);
+                  return m ? m[1] : null;
+                } catch { return null; }
+              };
+
+              let outdated = false;
+              let msg = "";
+
+              if (isCommit) {
+                try {
+                  const {data: {commit: {sha: latestSha}}} = await github.rest.repos.getBranch({owner, repo, branch: "testing"});
+                  if (reported.toLowerCase() !== latestSha.toLowerCase()) {
+                    outdated = true;
+                    msg = `Your commit \`${reported.slice(0,7)}\` is outdated. Latest testing commit is \`${latestSha.slice(0,7)}\`.\nPlease update to latest testing branch and re-test.\nIssue stays open.`;
+                  }
+                } catch {}
+              } else {
+                const testingVer = await getVersion("testing") || "unknown";
+                const mainVer = await getVersion("main") || "unknown";
+                let releaseVer = null;
+                try {
+                  const {data: releases} = await github.rest.repos.listReleases({owner, repo});
+                  if (releases[0]) releaseVer = await getVersion(releases[0].tag_name);
+                } catch {}
+
+                const candidates = [testingVer, mainVer, releaseVer].filter(v => v && /^\d+\.\d+\.\d+$/.test(v.replace(/^v/i, '')));
+                if (!candidates.length) return;
+
+                let latest = candidates[0];
+                for (const v of candidates) if (v > latest) latest = v;  // string compare works for x.y.z
+
+                if (reported.replace(/^v/i, '') !== latest) {
+                  outdated = true;
+                  msg = `Your version \`${reported}\` is outdated. Latest version is \`${latest}\`.\nPlease update to the latest release or testing branch and re-test.\nIssue stays open.`;
+                }
+              }
+
+              if (outdated) {
+                const {data: comments} = await github.rest.issues.listComments({owner, repo, issue_number});
+                if (comments.some(c => c.user.login === "github-actions[bot]" && c.body.includes("outdated"))) return;
+
+                await github.rest.issues.createComment({owner, repo, issue_number, body: msg});
+              }
+            }
+
+            await run();
