@@ -1,5 +1,8 @@
 package com.opuadm.linuxifymc.machine.states;
 
+import com.opuadm.linuxifymc.LinuxifyMC;
+import com.opuadm.linuxifymc.machine.fs.FakeFS;
+
 import org.bukkit.entity.Player;
 import org.bukkit.Bukkit;
 
@@ -74,7 +77,7 @@ public class Power {
             return;
         }
 
-        p.sendMessage("Starting boot...");
+        p.sendMessage("Loading " + LinuxifyMC.pluginName + " " + LinuxifyMC.kernelver + "...");
         Boot.Init(p);
     }
 
@@ -109,7 +112,7 @@ public class Power {
                 }
 
                 try {
-                    com.opuadm.linuxifymc.machine.fs.FakeFS fs = com.opuadm.linuxifymc.machine.fs.FakeFS.getPlayerFS(playerId, p.getName());
+                    FakeFS fs = FakeFS.getPlayerFS(playerId, p.getName());
                     if (fs != null) {
                         if (!fs.saveFS(p, fs)) {
                             p.sendMessage("Warning: Failed to save filesystem state");

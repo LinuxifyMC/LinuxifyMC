@@ -1,10 +1,14 @@
 // Remade FakeFS
 package com.opuadm.linuxifymc.machine.fs;
 
+import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.Database;
 import com.opuadm.linuxifymc.machine.shell.SudoContext;
+import com.opuadm.linuxifymc.machine.logs.CustomLogger;
+import com.opuadm.linuxifymc.machine.logs.Levels;
 
 import org.bukkit.entity.Player;
+import org.bukkit.Bukkit;
 
 import java.util.Deque;
 import java.util.List;
@@ -60,7 +64,9 @@ public class FakeFS {
     // DB Init
     private void initializeFSDatabase() {
         if (DB == null) {
-            logger.warning("E: Database is not initialized.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: Database is not initialized.");
+            }
             return;
         }
 
@@ -93,18 +99,24 @@ public class FakeFS {
     // Generic / Misc
     public void upgradeFS(FakeFS fsInstance) {
         if (DB == null) {
-            logger.warning("E: Database is not initialized.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: Database is not initialized.");
+            }
             return;
         }
         if (fsInstance == null) {
-            logger.warning("E: fsInstance is null.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: fsInstance is null.");
+            }
             return;
         }
 
         try {
             String uuid = fsInstance.playerUuid != null ? fsInstance.playerUuid.toString() : null;
             if (uuid == null) {
-                logger.warning("E: upgradeFS requires player UUID.");
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: upgradeFS requires player UUID.");
+                }
                 return;
             }
 
@@ -122,13 +134,18 @@ public class FakeFS {
 
             Object stored = selectRes.getFirst().getFirst();
             if (stored == null) {
-                logger.warning("E: Stored fs_version is null for " + fsInstance.plr);
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: Stored fs_version is null for " + fsInstance.plr);
+                }
                 return;
             }
             String storedVersion = stored.toString();
 
             if (storedVersion.equals(FS_VER)) {
-                logger.info("I: Filesystem for " + fsInstance.plr + " is already up-to-date (" + FS_VER + ")");
+                if (LinuxifyMC.debugMode) {
+                    logger.info("I: Filesystem for " + fsInstance.plr + " is already up-to-date (" + FS_VER + ")");
+                }
+                CustomLogger.Log(getPlr(fsInstance), Levels.INFO, "");
                 return;
             }
 
@@ -1014,4 +1031,13 @@ public class FakeFS {
     private synchronized long getUserFileBytes() {
         return diskSpaceUsedByUserFiles;
     }
+
+    private static @Nullable Player getPlr(FakeFS fsInstance) {
+        Player targetPlr = null;
+        if (fsInstance.playerUuid != null) {
+            targetPlr = Bukkit.getPlayer(fsInstance.playerUuid);
+        }
+        return targetPlr;
+    }
 }
+
