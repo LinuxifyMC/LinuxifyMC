@@ -23,7 +23,7 @@ import java.util.UUID;
 public final class LinuxifyMC extends JavaPlugin implements Listener {
     private LoginPrompt loginPrompt;
 
-    public static final boolean debugMode = false;
+    public static final boolean debugMode = true;
 
     public static String pluginName = "LinuxifyMC";
     public static String version = "0.1.1";

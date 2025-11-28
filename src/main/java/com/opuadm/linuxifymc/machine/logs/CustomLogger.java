@@ -2,7 +2,7 @@
 package com.opuadm.linuxifymc.machine.logs;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
-import com.opuadm.linuxifymc.machine.fs.ConvertPerms;
+// import com.opuadm.linuxifymc.machine.fs.ConvertPerms;
 
 import org.bukkit.entity.Player;
 
@@ -21,7 +21,7 @@ public class CustomLogger {
         if (playerFS.getFile(bootLogFilePath) != null) {
             playerFS.appendFile(bootLogFilePath, "\n" + logMessage);
         } else {
-            playerFS.makeFile(bootLogFilePath, player.getName(), ConvertPerms.octalToSymbolic("777"), logMessage);
+            playerFS.makeFile(bootLogFilePath, player.getName(), "777", logMessage);
         }
     }
 
@@ -35,7 +35,7 @@ public class CustomLogger {
         if (playerFS.getFile(logFilePath) != null) {
             playerFS.appendFile(logFilePath, "\n" + logMessage);
         } else {
-            playerFS.makeFile(logFilePath, player.getName(), ConvertPerms.octalToSymbolic("777"), logMessage);
+            playerFS.makeFile(logFilePath, player.getName(), "777", logMessage);
         }
     }
 
@@ -49,7 +49,7 @@ public class CustomLogger {
         if (playerFS.getFile(miscLogFilePath) != null) {
             playerFS.appendFile(miscLogFilePath, "\n" + logMessage);
         } else {
-            playerFS.makeFile(miscLogFilePath, player.getName(), ConvertPerms.octalToSymbolic("777"), logMessage);
+            playerFS.makeFile(miscLogFilePath, player.getName(), "777", logMessage);
         }
     }
 }

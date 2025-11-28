@@ -6,10 +6,12 @@ import com.opuadm.linuxifymc.Database;
 import com.opuadm.linuxifymc.machine.shell.SudoContext;
 import com.opuadm.linuxifymc.machine.logs.CustomLogger;
 import com.opuadm.linuxifymc.machine.logs.Levels;
+import com.opuadm.linuxifymc.machine.clock.Timer;
 
 import org.bukkit.entity.Player;
 import org.bukkit.Bukkit;
 
+import java.text.MessageFormat;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
@@ -64,9 +66,7 @@ public class FakeFS {
     // DB Init
     private void initializeFSDatabase() {
         if (DB == null) {
-            if (LinuxifyMC.debugMode) {
-                logger.warning("E: Database is not initialized.");
-            }
+            logger.warning("E: Database is not initialized.");
             return;
         }
 
@@ -145,16 +145,20 @@ public class FakeFS {
                 if (LinuxifyMC.debugMode) {
                     logger.info("I: Filesystem for " + fsInstance.plr + " is already up-to-date (" + FS_VER + ")");
                 }
-                CustomLogger.Log(getPlr(fsInstance), Levels.INFO, "");
+                CustomLogger.Log(getPlr(fsInstance), Levels.INFO, MessageFormat.format("[    {0}] Your filesystem is already up-to-date.", Timer.getStamp()));
                 return;
             }
 
             DB.query("UPDATE fs_saves SET fs_version = ? WHERE player_uuid = ?",
                     FS_VER, uuid);
 
-            logger.info("I: Filesystem for " + fsInstance.plr + " upgraded from " + storedVersion + " to " + FS_VER);
+            if (LinuxifyMC.debugMode) {
+                logger.info("I: Filesystem for " + fsInstance.plr + " upgraded from " + storedVersion + " to " + FS_VER);
+            }
+            CustomLogger.Log(getPlr(fsInstance), Levels.INFO, MessageFormat.format("[    {0}] Your filesystem has been successfully upgraded from {1} to {2}!", Timer.getStamp(), storedVersion, FS_VER));
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while upgrading the filesystem: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(fsInstance), Levels.WARNING, MessageFormat.format("[    {0}] Error while upgrading the filesystem! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -170,7 +174,9 @@ public class FakeFS {
                     lenObj = 0;
                 }
                 if (lenObj == null) {
-                    logger.warning("E: File not found or could not be updated: " + path);
+                    if (LinuxifyMC.debugMode) {
+                        logger.warning("E: File not found or could not be updated: " + path);
+                    }
                     return null;
                 }
 
@@ -224,33 +230,6 @@ public class FakeFS {
         }
     }
 
-    private @NotNull Deque<String> getStrings(String target) {
-        String home = "/home/" + plr.toLowerCase();
-        String norm = target.trim();
-        if (norm.equals("~")) {
-            norm = home;
-        } else if (norm.startsWith("~/")) {
-            norm = home + norm.substring(1);
-        }
-
-        if (!norm.startsWith("/")) {
-            String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
-            norm = (base.equals("/") ? "" : base) + "/" + norm;
-        }
-
-        String[] parts = norm.replaceAll("/+", "/").split("/");
-        Deque<String> stack = new java.util.ArrayDeque<>();
-        for (String p : parts) {
-            if (p.isEmpty() || p.equals(".")) continue;
-            if (p.equals("..")) {
-                if (!stack.isEmpty()) stack.removeLast();
-                continue;
-            }
-            stack.addLast(p);
-        }
-        return stack;
-    }
-
     // Save/Load
     public void loadFS(UUID playerUuid) {
         if (playerUuid == null) return;
@@ -270,6 +249,7 @@ public class FakeFS {
                 }
             } catch (Exception e) {
                 logger.log(Level.FINE, "I: could not read stored player name for " + playerUuid + ": " + e.getMessage());
+                CustomLogger.Log(Bukkit.getPlayer(playerUuid), Levels.GENERAL, MessageFormat.format("[    {0}] Could not read stored player name for {1}. Error: ${2}", Timer.getStamp(), playerUuid, e.getMessage()));
             }
         }
 
@@ -344,8 +324,8 @@ public class FakeFS {
         try {
             String[] sysDirs = new String[] {
                     "/sys", "/dev", "/etc", "/boot", "/proc", "/root",
-                    "/usr", "/home", "/tmp", "/var", "/opt",
-                    "/usr/bin", "/usr/sbin", "/usr/lib", "/usr/lib64", "/usr/local",
+                    "/usr", "/home", "/tmp", "/var", "/opt", "/bin", "/sbin",
+                    "/usr/bin", "/usr/sbin", "/usr/lib", "/usr/local",
                     "/var/log"
             };
             for (String d : sysDirs) {
@@ -366,7 +346,9 @@ public class FakeFS {
             if (homeCntVal == 0L) {
                 DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
                         playerUuid.toString(), homePath, this.plr.toLowerCase(), defaultGroup, "755");
-                logger.fine("F: setupSysFiles inserted player home: " + homePath);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("F: setupSysFiles inserted player home: " + homePath);
+                }
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: setupSysFiles direct inserts failed: " + e.getMessage(), e);
@@ -378,7 +360,9 @@ public class FakeFS {
         Objects.requireNonNull(plrUUID, "E: UUID cannot be null.");
         Objects.requireNonNull(username, "E: Username cannot be null.");
         if (DB == null) {
-            logger.warning("E: Database is not initialized.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: Database is not initialized.");
+            }
             return null;
         }
         return PLAYER_FS.compute(plrUUID, (id, existing) -> {
@@ -416,7 +400,10 @@ public class FakeFS {
             var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), parent);
             if (pr == null || pr.isEmpty()) {
-                logger.fine("E: makeDir: parent not found: " + parent);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: makeDir: parent not found: " + parent);
+                }
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeDir: parent not found: {1}", Timer.getStamp(), parent));
                 return;
             }
             List<Object> prow = pr.getFirst();
@@ -424,14 +411,19 @@ public class FakeFS {
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
             if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
-                logger.fine("E: makeDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: makeDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                }
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeDir: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
                 return;
             }
 
             DB.executeUpdate("INSERT INTO fs_dirs (player_uuid, path, owner, group_name, permissions) VALUES (?, ?, ?, ?, ?)",
                     playerUuid.toString(), path, owner, defaultGroup, perms);
 
-            logger.info("I: makeDir inserted: " + path + " owner=" + owner + " perms=" + perms);
+            if (LinuxifyMC.debugMode) {
+                logger.info("I: makeDir inserted: " + path + " owner=" + owner + " perms=" + perms);
+            }
 
             DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
                     playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
@@ -439,6 +431,7 @@ public class FakeFS {
             changePermissions(path, perms);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while creating directory: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while creating directory! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -464,7 +457,9 @@ public class FakeFS {
             var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), parent);
             if (pr == null || pr.isEmpty()) {
-                logger.fine("E: makeFile: parent not found: " + parent);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: makeFile: parent not found: " + parent);
+                }
                 return;
             }
             List<Object> prow = pr.getFirst();
@@ -472,7 +467,10 @@ public class FakeFS {
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
             if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
-                logger.fine("E: makeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: makeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                }
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeFile: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
                 return;
             }
 
@@ -494,7 +492,9 @@ public class FakeFS {
             DB.executeUpdate("INSERT INTO fs_files (player_uuid, path, owner, group_name, permissions, content) VALUES (?, ?, ?, ?, ?, ?)",
                     playerUuid.toString(), path, owner, defaultGroup, perms, content);
 
-            logger.info("I: makeFile inserted: " + path + " owner=" + owner + " perms=" + perms + " size=" + (content==null?0:content.length()));
+            if (LinuxifyMC.debugMode) {
+                logger.info("I: makeFile inserted: " + path + " owner=" + owner + " perms=" + perms + " size=" + (content==null?0:content.length()));
+            }
 
             changePermissions(path, perms);
             if (content != null) {
@@ -503,6 +503,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while creating file: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while creating file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -1038,6 +1039,33 @@ public class FakeFS {
             targetPlr = Bukkit.getPlayer(fsInstance.playerUuid);
         }
         return targetPlr;
+    }
+
+    private @NotNull Deque<String> getStrings(String target) {
+        String home = "/home/" + plr.toLowerCase();
+        String norm = target.trim();
+        if (norm.equals("~")) {
+            norm = home;
+        } else if (norm.startsWith("~/")) {
+            norm = home + norm.substring(1);
+        }
+
+        if (!norm.startsWith("/")) {
+            String base = (this.CurDir == null || this.CurDir.isEmpty()) ? "/" : this.CurDir;
+            norm = (base.equals("/") ? "" : base) + "/" + norm;
+        }
+
+        String[] parts = norm.replaceAll("/+", "/").split("/");
+        Deque<String> stack = new java.util.ArrayDeque<>();
+        for (String p : parts) {
+            if (p.isEmpty() || p.equals(".")) continue;
+            if (p.equals("..")) {
+                if (!stack.isEmpty()) stack.removeLast();
+                continue;
+            }
+            stack.addLast(p);
+        }
+        return stack;
     }
 }
 
