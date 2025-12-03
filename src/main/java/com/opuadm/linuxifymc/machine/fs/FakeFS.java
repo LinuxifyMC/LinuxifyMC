@@ -511,7 +511,9 @@ public class FakeFS {
     public synchronized void deleteFile(String path) {
         if (playerUuid == null) return;
         if (path == null || path.isEmpty()) {
-            logger.warning("E: deleteFile requires a valid path.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: deleteFile requires a valid path.");
+            }
             return;
         }
         try {
@@ -523,7 +525,9 @@ public class FakeFS {
             var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), parent);
             if (pr == null || pr.isEmpty()) {
-                logger.fine("E: deleteFile: parent not found: " + parent);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: deleteFile: parent not found: " + parent);
+                }
                 return;
             }
             List<Object> prow = pr.getFirst();
@@ -531,7 +535,10 @@ public class FakeFS {
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
             if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
-                logger.fine("E: deleteFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: deleteFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                }
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] deleteFile: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
                 return;
             }
             Object lenObj = DB.singleValueQuery("SELECT length(content) FROM fs_files WHERE player_uuid = ? AND path = ?",
@@ -541,24 +548,30 @@ public class FakeFS {
             int deleted = DB.executeUpdate("DELETE FROM fs_files WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
             if (deleted > 0) {
-                // adjust disk usage
                 adjustUserFileBytes(-oldLen);
                 updateDiskSpaceUsage();
                 DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
                         playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
-                logger.info("I: File deleted: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.info("I: File deleted: " + path);
+                }
             } else {
-                logger.fine("I: deleteFile: file not found: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("I: deleteFile: file not found: " + path);
+                }
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: deleteFile failed: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while deleting file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
     public synchronized void deleteDir(String path, boolean recursive, boolean force) {
         if (playerUuid == null) return;
         if (path == null || path.isEmpty()) {
-            logger.warning("E: deleteDir requires a valid path.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: deleteDir requires a valid path.");
+            }
             return;
         }
         try {
@@ -572,7 +585,9 @@ public class FakeFS {
                 dirCount = ((Number) dirCheck.getFirst().getFirst()).longValue();
             }
             if (dirCount == 0) {
-                logger.warning("E: deleteDir: Directory not found: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: deleteDir: Directory not found: " + path);
+                }
                 return;
             }
 
@@ -599,7 +614,9 @@ public class FakeFS {
             }
 
             if (!recursive && (dirCntInside > 0 || fileCnt > 0)) {
-                logger.warning("E: deleteDir refused: directory not empty: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: deleteDir refused: directory not empty: " + path);
+                }
                 return;
             }
 
@@ -617,7 +634,10 @@ public class FakeFS {
                 String parentGroup = (String) prow.get(1);
                 String parentPerms = (String) prow.get(2);
                 if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
-                    logger.fine("E: deleteDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                    if (LinuxifyMC.debugMode) {
+                        logger.fine("E: deleteDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                    }
+                    CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] deleteDir: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
                     return;
                 }
                 if (totalFilesSize > 0) {
@@ -637,7 +657,9 @@ public class FakeFS {
             DB.executeUpdate("INSERT OR REPLACE INTO fs_saves (player_uuid, player_name, fs_version, disk_space_used, disk_space_free, current_dir) VALUES (?, ?, ?, ?, ?, ?)",
                     playerUuid.toString(), plr, FS_VER, totalDiskSpaceUsed, diskSpaceFree, CurDir);
 
-            logger.info("I: Directory deleted: " + path + (force ? " (forced)" : ""));
+            if (LinuxifyMC.debugMode) {
+                logger.info("I: Directory deleted: " + path + (force ? " (forced)" : ""));
+            }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: deleteDir failed: " + e.getMessage(), e);
         }
@@ -656,7 +678,9 @@ public class FakeFS {
             var result = DB.query("SELECT path FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), path);
             if (result == null || result.isEmpty()) {
-                logger.fine("E: Directory not found for player=" + plr + ": " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: Directory not found for player=" + plr + ": " + path);
+                }
                 return null;
             }
         } catch (Exception e) {
