@@ -10,6 +10,5 @@
 - Partitioning
 
 # Quick TODO
-- Make debugMode actually used
 - Change boot logs a bit
 - Make things feel like in Linux (mostly about messages printed)

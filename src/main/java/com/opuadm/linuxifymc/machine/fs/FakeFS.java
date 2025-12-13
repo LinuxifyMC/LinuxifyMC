@@ -662,6 +662,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: deleteDir failed: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while deleting directory! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -748,7 +749,9 @@ public class FakeFS {
         if (playerUuid == null) return;
         try {
             if (path == null || path.isEmpty()) {
-                logger.warning("E: Path cannot be null or empty.");
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: Path cannot be null or empty.");
+                }
                 return;
             }
             if (!path.startsWith("/")) {
@@ -764,20 +767,25 @@ public class FakeFS {
             var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), parent);
             if (pr == null || pr.isEmpty()) {
-                logger.fine("E: writeFile: parent not found: " + parent);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: writeFile: parent not found: " + parent);
+                }
                 return;
             }
             List<Object> prow = pr.getFirst();
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
-                logger.fine("E: writeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: writeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                }
                 return;
             }
             txWriteFile(path, content, false);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while writing to the file: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while writing to file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -785,7 +793,9 @@ public class FakeFS {
         if (playerUuid == null) return;
         try {
             if (path == null || path.isEmpty()) {
-                logger.warning("E: Path cannot be null or empty.");
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: Path cannot be null or empty.");
+                }
                 return;
             }
 
@@ -801,7 +811,9 @@ public class FakeFS {
                     playerUuid.toString(), path);
             long cnt = (existsCnt instanceof Number n) ? n.longValue() : 0L;
             if (cnt == 0L) {
-                logger.warning("E: File not found or could not be updated: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: File not found or could not be updated: " + path);
+                }
                 return;
             }
             String parent = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : "/";
@@ -809,20 +821,25 @@ public class FakeFS {
             var pr = DB.query("SELECT owner, group_name, permissions FROM fs_dirs WHERE player_uuid = ? AND path = ?",
                     playerUuid.toString(), parent);
             if (pr == null || pr.isEmpty()) {
-                logger.fine("E: appendFile: parent not found: " + parent);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: appendFile: parent not found: " + parent);
+                }
                 return;
             }
             List<Object> prow = pr.getFirst();
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
-                logger.fine("E: appendFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: appendFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
+                }
                 return;
             }
             txWriteFile(path, content, true);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while appending to the file: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while appending to file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -856,7 +873,9 @@ public class FakeFS {
         if (playerUuid == null) return;
         try {
             if (path == null || path.isEmpty() || newPerms == null || newPerms.length() != 3) {
-                logger.warning("E: Path cannot be null or empty, or new permissions cannot be null or invalid.");
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: Path cannot be null or empty, or new permissions cannot be null or invalid.");
+                }
                 return;
             }
             path = path.replaceAll("/+", "/");
@@ -891,34 +910,47 @@ public class FakeFS {
             }
 
             if ((curPerms == null || lacksPermissions(curPerms, curOwner, curGroup, this.plr, "w"))
-                    && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
-                logger.fine("E: changePermissions: permission denied for player=" + this.plr + " path=" + path);
+                    && !SudoContext.isSudo()) {
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: changePermissions: permission denied for player=" + this.plr + " path=" + path);
+                }
                 return;
             }
 
             if (dirCount > 0) {
                 DB.query("UPDATE fs_dirs SET permissions = ? WHERE player_uuid = ? AND path = ?",
                         newPerms, playerUuid.toString(), path);
-                logger.info("I: Directory permissions changed for " + path + " to " + newPerms + " (" + symbolicPerms + ")");
+                if (LinuxifyMC.debugMode) {
+                    logger.info("I: Directory permissions changed for " + path + " to " + newPerms + " (" + symbolicPerms + ")");
+                }
             } else if (fileCount > 0) {
                 DB.query("UPDATE fs_files SET permissions = ? WHERE player_uuid = ? AND path = ?",
                         newPerms, playerUuid.toString(), path);
-                logger.info("I: File permissions changed for " + path + " to " + newPerms + " (" + symbolicPerms + ")");
+                if (LinuxifyMC.debugMode) {
+                    logger.info("I: File permissions changed for " + path + " to " + newPerms + " (" + symbolicPerms + ")");
+                }
             } else {
-                logger.warning("E: Path not found: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: Path not found: " + path);
+                }
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while changing permissions: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while changing permissions! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
     public synchronized void changeOwner(String path, String newOwner) {
         if (playerUuid == null) {
-            logger.warning("E: changeOwner requires player UUID.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: changeOwner requires player UUID.");
+            }
             return;
         }
         if (path == null || path.isEmpty() || newOwner == null || newOwner.isEmpty()) {
-            logger.warning("E: changeOwner requires a valid path and owner.");
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: changeOwner requires a valid path and owner.");
+            }
             return;
         }
         try {
@@ -945,24 +977,33 @@ public class FakeFS {
             if (ownerRes != null && !ownerRes.isEmpty()) {
                 curOwner = ownerRes.getFirst().getFirst().toString();
             }
-            if ((curOwner == null || !curOwner.equalsIgnoreCase(this.plr)) && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
-                logger.fine("E: changeOwner: permission denied for player=" + this.plr + " path=" + path);
+            if ((curOwner == null || !curOwner.equalsIgnoreCase(this.plr)) && !SudoContext.isSudo()) {
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: changeOwner: permission denied for player=" + this.plr + " path=" + path);
+                }
                 return;
             }
 
             if (dirCount > 0) {
                 DB.executeUpdate("UPDATE fs_dirs SET owner = ? WHERE player_uuid = ? AND path = ?",
                         newOwner, playerUuid.toString(), path);
-                logger.info("I: Directory owner changed for " + path + " to " + newOwner);
+                if (LinuxifyMC.debugMode) {
+                    logger.info("I: Directory owner changed for " + path + " to " + newOwner);
+                }
             } else if (fileCount > 0) {
                 DB.executeUpdate("UPDATE fs_files SET owner = ? WHERE player_uuid = ? AND path = ?",
                         newOwner, playerUuid.toString(), path);
-                logger.info("I: File owner changed for " + path + " to " + newOwner);
+                if (LinuxifyMC.debugMode) {
+                    logger.info("I: File owner changed for " + path + " to " + newOwner);
+                }
             } else {
-                logger.warning("E: changeOwner: Path not found: " + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.warning("E: changeOwner: Path not found: " + path);
+                }
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: changeOwner failed: " + e.getMessage(), e);
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while changing owner! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
         }
     }
 
@@ -970,11 +1011,15 @@ public class FakeFS {
     @Nullable
     private String getString(String path) {
         if (playerUuid == null) {
-            logger.warning("E: getString refused: playerUuid is null for player=" + this.plr + " path=" + path);
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: getString refused: playerUuid is null for player=" + this.plr + " path=" + path);
+            }
             return null;
         }
         if (path == null || path.isEmpty()) {
-            logger.warning("E: getString refused: path null/empty for player=" + this.plr);
+            if (LinuxifyMC.debugMode) {
+                logger.warning("E: getString refused: path null/empty for player=" + this.plr);
+            }
             return null;
         }
 
@@ -993,7 +1038,9 @@ public class FakeFS {
                     playerUuid.toString(), parentDir);
 
             if (parentResult == null || parentResult.isEmpty()) {
-                logger.fine("E: getString: parent directory not found for player=" + this.plr + " parent=" + parentDir + " path=" + path);
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: getString: parent directory not found for player=" + this.plr + " parent=" + parentDir + " path=" + path);
+                }
                 return null;
             }
 
@@ -1003,8 +1050,10 @@ public class FakeFS {
             String parentPerms = (String) row.get(2);
 
             if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")
-                    && !com.opuadm.linuxifymc.machine.shell.SudoContext.isSudo()) {
-                logger.fine("E: getString: write permission denied for player=" + this.plr + " on parent=" + parentDir + " perms=" + parentPerms + " owner=" + parentOwner + " group=" + parentGroup);
+                    && !SudoContext.isSudo()) {
+                if (LinuxifyMC.debugMode) {
+                    logger.fine("E: getString: write permission denied for player=" + this.plr + " on parent=" + parentDir + " perms=" + parentPerms + " owner=" + parentOwner + " group=" + parentGroup);
+                }
                 return null;
             }
         }
