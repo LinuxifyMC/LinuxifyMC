@@ -1,10 +1,12 @@
 package com.opuadm.linuxifymc.machine.states;
 
 import com.opuadm.linuxifymc.LinuxifyMC;
+import com.opuadm.linuxifymc.machine.clock.Timer;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 
 import org.bukkit.entity.Player;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +38,7 @@ public class Power {
     public static void removeFor(UUID playerId) {
         if (playerId == null) return;
         registry.remove(playerId);
+        Timer.StopTimer(playerId);
     }
 
     private Power(@NotNull UUID uuid) {
@@ -77,6 +80,7 @@ public class Power {
             return;
         }
 
+        Timer.StartTimer(JavaPlugin.getPlugin(LinuxifyMC.class), playerId);
         p.sendMessage("Loading " + LinuxifyMC.pluginName + " " + LinuxifyMC.kernelver + "...");
         Boot.Init(p);
     }
@@ -95,6 +99,7 @@ public class Power {
             isOff = true;
             if (p != null) p.sendMessage("Boot aborted. Machine is now off.");
             try { ChangeStateVar(0); } catch (Exception ignore) {}
+            Timer.StopTimer(playerId);
             return;
         }
 
@@ -128,6 +133,7 @@ public class Power {
             logger.warning("E: Exception during VM shutdown for " + playerId + ": " + e.getMessage());
         } finally {
             try { ChangeStateVar(0); } catch (Exception ignore) {}
+            Timer.StopTimer(playerId);
         }
     }
 

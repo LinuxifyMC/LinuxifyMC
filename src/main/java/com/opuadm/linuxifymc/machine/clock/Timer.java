@@ -3,30 +3,45 @@ package com.opuadm.linuxifymc.machine.clock;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class Timer {
-    public static final AtomicLong timeSinceTimerStart = new AtomicLong(0L);
+    private static final Map<UUID, AtomicLong> userTimers = new ConcurrentHashMap<>();
+    private static final Map<UUID, BukkitTask> userTasks = new ConcurrentHashMap<>();
+    private static final long INC_PER_TICK_MICROS = 1L;
 
-    private static BukkitTask task;
-    private static final long INC_PER_TICK_MICROS = 50_000L; // 50 ms
-
-    public static synchronized void StartTimer(JavaPlugin plugin) {
-        if (task != null) return;
-        timeSinceTimerStart.set(0L);
-        task = plugin.getServer().getScheduler().runTaskTimerAsynchronously(
+    public static synchronized void StartTimer(JavaPlugin plugin, UUID uuid) {
+        if (userTasks.containsKey(uuid)) return;
+        
+        userTimers.put(uuid, new AtomicLong(0L));
+        
+        BukkitTask task = plugin.getServer().getScheduler().runTaskTimerAsynchronously(
                 plugin,
-                () -> timeSinceTimerStart.addAndGet(INC_PER_TICK_MICROS),
+                () -> {
+                    AtomicLong timer = userTimers.get(uuid);
+                    if (timer != null) {
+                        timer.addAndGet(INC_PER_TICK_MICROS);
+                    }
+                },
                 0L, 1L
         );
+        userTasks.put(uuid, task);
     }
 
-    public static synchronized void StopTimer() {
-        if (task != null) { task.cancel(); task = null; }
+    public static synchronized void StopTimer(UUID uuid) {
+        BukkitTask task = userTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+        userTimers.remove(uuid);
     }
 
-    public static String getStamp() {
-        long micros = timeSinceTimerStart.get();
+    public static String getStamp(UUID uuid) {
+        AtomicLong timer = userTimers.get(uuid);
+        long micros = timer != null ? timer.get() : 0L;
         long secs = micros / 1_000_000L;
         int microPart = (int) (micros % 1_000_000L);
         return secs + "." + String.format("%06d", microPart);

@@ -145,7 +145,7 @@ public class FakeFS {
                 if (LinuxifyMC.debugMode) {
                     logger.info("I: Filesystem for " + fsInstance.plr + " is already up-to-date (" + FS_VER + ")");
                 }
-                CustomLogger.Log(getPlr(fsInstance), Levels.INFO, MessageFormat.format("[    {0}] Your filesystem is already up-to-date.", Timer.getStamp()));
+                CustomLogger.Log(getPlr(fsInstance), Levels.INFO, MessageFormat.format("[    {0}] Your filesystem is already up-to-date.", Timer.getStamp(fsInstance.playerUuid)));
                 return;
             }
 
@@ -155,10 +155,10 @@ public class FakeFS {
             if (LinuxifyMC.debugMode) {
                 logger.info("I: Filesystem for " + fsInstance.plr + " upgraded from " + storedVersion + " to " + FS_VER);
             }
-            CustomLogger.Log(getPlr(fsInstance), Levels.INFO, MessageFormat.format("[    {0}] Your filesystem has been successfully upgraded from {1} to {2}!", Timer.getStamp(), storedVersion, FS_VER));
+            CustomLogger.Log(getPlr(fsInstance), Levels.INFO, MessageFormat.format("[    {0}] Your filesystem has been successfully upgraded from {1} to {2}!", Timer.getStamp(fsInstance.playerUuid), storedVersion, FS_VER));
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while upgrading the filesystem: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(fsInstance), Levels.WARNING, MessageFormat.format("[    {0}] Error while upgrading the filesystem! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(fsInstance), Levels.WARNING, MessageFormat.format("[    {0}] Error while upgrading the filesystem! Error: ${1} ${2}", Timer.getStamp(fsInstance.playerUuid), e.getMessage(), e));
         }
     }
 
@@ -249,7 +249,7 @@ public class FakeFS {
                 }
             } catch (Exception e) {
                 logger.log(Level.FINE, "I: could not read stored player name for " + playerUuid + ": " + e.getMessage());
-                CustomLogger.Log(Bukkit.getPlayer(playerUuid), Levels.GENERAL, MessageFormat.format("[    {0}] Could not read stored player name for {1}. Error: ${2}", Timer.getStamp(), playerUuid, e.getMessage()));
+                CustomLogger.Log(Bukkit.getPlayer(playerUuid), Levels.GENERAL, MessageFormat.format("[    {0}] Could not read stored player name for {1}. Error: ${2}", Timer.getStamp(playerUuid), playerUuid, e.getMessage()));
             }
         }
 
@@ -403,7 +403,7 @@ public class FakeFS {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: makeDir: parent not found: " + parent);
                 }
-                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeDir: parent not found: {1}", Timer.getStamp(), parent));
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeDir: parent not found: {1}", Timer.getStamp(playerUuid), parent));
                 return;
             }
             List<Object> prow = pr.getFirst();
@@ -414,7 +414,7 @@ public class FakeFS {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: makeDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
-                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeDir: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeDir: permission denied! parent={1} perms={2}", Timer.getStamp(playerUuid), parent, parentPerms));
                 return;
             }
 
@@ -431,7 +431,7 @@ public class FakeFS {
             changePermissions(path, perms);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while creating directory: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while creating directory! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while creating directory! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -470,7 +470,7 @@ public class FakeFS {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: makeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
-                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeFile: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] makeFile: permission denied! parent={1} perms={2}", Timer.getStamp(playerUuid), parent, parentPerms));
                 return;
             }
 
@@ -503,7 +503,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while creating file: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while creating file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while creating file! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -538,7 +538,7 @@ public class FakeFS {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: deleteFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
-                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] deleteFile: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
+                CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] deleteFile: permission denied! parent={1} perms={2}", Timer.getStamp(playerUuid), parent, parentPerms));
                 return;
             }
             Object lenObj = DB.singleValueQuery("SELECT length(content) FROM fs_files WHERE player_uuid = ? AND path = ?",
@@ -562,7 +562,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: deleteFile failed: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while deleting file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while deleting file! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -637,7 +637,7 @@ public class FakeFS {
                     if (LinuxifyMC.debugMode) {
                         logger.fine("E: deleteDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                     }
-                    CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] deleteDir: permission denied! parent={1} perms={2}", Timer.getStamp(), parent, parentPerms));
+                    CustomLogger.Log(getPlr(this), Levels.GENERAL, MessageFormat.format("[    {0}] deleteDir: permission denied! parent={1} perms={2}", Timer.getStamp(playerUuid), parent, parentPerms));
                     return;
                 }
                 if (totalFilesSize > 0) {
@@ -662,7 +662,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: deleteDir failed: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while deleting directory! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while deleting directory! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -785,7 +785,7 @@ public class FakeFS {
             txWriteFile(path, content, false);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while writing to the file: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while writing to file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while writing to file! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -839,7 +839,7 @@ public class FakeFS {
             txWriteFile(path, content, true);
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while appending to the file: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while appending to file! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while appending to file! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -936,7 +936,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: An error occurred while changing permissions: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while changing permissions! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while changing permissions! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -1003,7 +1003,7 @@ public class FakeFS {
             }
         } catch (Exception e) {
             logger.log(Level.WARNING, "E: changeOwner failed: " + e.getMessage(), e);
-            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while changing owner! Error: ${1} ${2}", Timer.getStamp(), e.getMessage(), e));
+            CustomLogger.Log(getPlr(this), Levels.WARNING, MessageFormat.format("[    {0}] Error while changing owner! Error: ${1} ${2}", Timer.getStamp(playerUuid), e.getMessage(), e));
         }
     }
 
@@ -1141,4 +1141,3 @@ public class FakeFS {
         return stack;
     }
 }
-

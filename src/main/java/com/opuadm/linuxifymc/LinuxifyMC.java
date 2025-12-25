@@ -94,13 +94,6 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        Object exists = FakeFS.DB == null ? null : FakeFS.DB.singleValueQuery("SELECT 1 FROM fs_saves WHERE player_uuid = ?", uuid.toString());
-        boolean isNew = exists == null;
-        FakeFS plrFS = FakeFS.getPlayerFS(uuid, player.getName());
-        if (plrFS == null) return;
-        plrFS.loadFS(uuid);
-        if (isNew) plrFS.setupSysFiles();
-        plrFS.upgradeFS(plrFS);
 
         try {
             if (database != null) {
