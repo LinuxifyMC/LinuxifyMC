@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virality Games | ROBLOX Game Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <meta name="title" content="Virality Games |  ROBLOX Game studio">
+<meta name="description" content="Play Best Roblox Games for Kids! Top Roblox Games 2026, Safe Roblox Games for Kids, Fun Roblox Games, Roblox Obby, Roblox Simulator, Roblox Tycoon, Roblox Roleplay. Discover Trending Roblox Games, Free Roblox Games, New Roblox Games, Kid-Friendly Roblox Games, and Viral Roblox Games. Virality Games is your #1 source for Roblox games for girls, Roblox games for boys, and the best Roblox experiences for toddlers and kids. Play viral Roblox games now!">
+<meta name="keywords" content="Roblox, Roblox games, Roblox games for kids, Safe Roblox games, Fun Roblox games, Best Roblox games 2026, Trending Roblox games, Viral Roblox games, Roblox Obby, Roblox Simulator, Roblox Tycoon, Roblox Roleplay, Dress to Impress Roblox, Steal a Brainrot Roblox, Grow a Garden Roblox, Brookhaven RP, Blox Fruits, Adopt Me, Pet Simulator 99, Royale High, Murder Mystery 2, Tower of Hell, Doors Roblox, MeepCity, Sol's RNG, Toilet Tower Defense, Skibidi Roblox, Brainrot games, Aura Edit Battles, Phonk Tower, Sajonara Tower, Fisch Roblox, Blue Lock Rivals, Anime Defenders, Easy Obby for kids, Kid-friendly Roblox, Roblox for girls, Roblox for boys, Unblocked Roblox, Roblox games for 7 year olds, Roblox games for 10 year olds, Free Roblox games, New Roblox updates 2026, Roblox escape room, Hide and Seek Extreme, Barry's Prison Run, Pet Sim 99 codes, Roblox memes, Gen Alpha Roblox, Roblox brainrot keywords, how to play Roblox safe, best Roblox experiences, Roblox multiplayer.">
+<meta name="robots" content="index, follow">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="language" content="English">
+<meta name="author" content="Virality">
+
+    
+    <style>
+        :root {
+            --bg: #030305;
+            --glass: rgba(255, 255, 255, 0.02);
+            --border: rgba(255, 255, 255, 0.08);
+            --orange-grad: linear-gradient(135deg, #ff8c00 0%, #ff4500 100%);
+            --blue-grad: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+            --purple-grad: linear-gradient(135deg, #9d50bb 0%, #6e48aa 100%);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; cursor: none !important; }
+        body { background: var(--bg); color: #fff; overflow-x: hidden; line-height: 1.6; }
+
+        /* --- IMMERSIVE STARFIELD --- */
+        #star-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; pointer-events: none; }
+        .bg-glow { 
+            position: fixed; width: 100vw; height: 100vh; 
+            background: radial-gradient(circle at 50% 50%, rgba(255, 140, 0, 0.03) 0%, transparent 70%);
+            z-index: -1; pointer-events: none; 
+        }
+
+        /* --- SMOOTH CURSOR --- */
+        #cursor { position: fixed; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 100000; box-shadow: 0 0 15px #fff; will-change: transform; }
+        #cursor-ring { position: fixed; width: 40px; height: 40px; border: 1.5px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: none; z-index: 99999; will-change: transform; }
+
+        .container { width: 90%; max-width: 1200px; margin: 0 auto; padding: 100px 0; position: relative; }
+
+        /* --- HEADER --- */
+        header { margin-bottom: 80px; }
+        header h1 { 
+            font-size: clamp(3rem, 10vw, 7rem); font-weight: 800; letter-spacing: -4px;
+            background: linear-gradient(to bottom, #fff 40%, rgba(255,255,255,0.1) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        
+        .social-bar { display: flex; gap: 12px; margin-top: 25px; flex-wrap: wrap; }
+        .social-link { 
+            padding: 12px 24px; border-radius: 14px; background: var(--glass); 
+            border: 1px solid var(--border); color: #fff; text-decoration: none; 
+            font-size: 0.85rem; font-weight: 700; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+        .social-link:hover { background: #fff; color: #000; transform: translateY(-3px); }
+
+        /* --- DYNAMIC GRID --- */
+        .section-title { font-size: 1.5rem; margin-top: 100px; margin-bottom: 40px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255,255,255,0.4); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 30px; }
+        
+        .box {
+            background: var(--glass); backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 35px;
+            padding: 45px; transition: 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .box:hover { transform: translateY(-12px) scale(1.02); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.04); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+        
+        .visual-preview {
+            width: 100%; height: 240px; border-radius: 22px; margin-bottom: 30px;
+            display: flex; align-items: center; justify-content: center; font-size: 5rem;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.2);
+        }
+
+        .btn {
+            display: block; width: 100%; padding: 22px; border-radius: 20px;
+            text-align: center; font-weight: 800; text-decoration: none; margin-top: 30px;
+            transition: 0.3s; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-play { background: #fff; color: #000; }
+        .btn-store { background: var(--glass); color: #fff; border: 1px solid var(--border); }
+        .btn:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+        /* --- COMMUNITY AUDIT --- */
+        .reviews-section { background: rgba(255,255,255,0.01); border-radius: 50px; padding: 60px; border: 1px solid var(--border); margin-top: 120px; }
+        #reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; max-height: 900px; overflow: hidden; position: relative; }
+        #reviews-grid.open { max-height: none; }
+        
+        .review-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 28px; padding: 30px; align-self: start; }
+        .user-info { display: flex; justify-content: space-between; font-weight: 800; color: #ffb800; margin-bottom: 15px; }
+        
+        .reply-thread { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .reply-item { padding-left: 15px; border-left: 2px solid rgba(255,255,255,0.1); font-size: 0.85rem; }
+        .reply-item.official b { color: #ff8c00; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 2px; }
+
+        .fade { position: absolute; bottom: 0; left: 0; width: 100%; height: 400px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <canvas id="star-canvas"></canvas>
+    <div class="bg-glow"></div>
+    <div id="cursor"></div>
+    <div id="cursor-ring"></div>
+
+    <div class="container">
+        <header>
+            <p style="text-transform: uppercase; letter-spacing: 6px; font-weight: 800; color: #ff8c00; font-size: 0.7rem; margin-bottom: 10px;">The Next Generation</p>
+            <h1>VIRALITY</h1>
+            <div class="social-bar" id="social-anchor"></div>
+        </header>
+
+        <h2 class="section-title">Experiences</h2>
+        <div class="grid" id="games-container"></div>
+
+        <h2 class="section-title">Marketplace</h2>
+        <div class="grid" id="store-container"></div>
+
+        <div class="reviews-section">
+            <h2 style="font-size: 2.5rem; margin-bottom: 40px; font-weight: 800;">Community Feed</h2>
+            <div id="reviews-grid">
+                <div class="fade"></div>
+            </div>
+            <div style="text-align: center; margin-top: 60px;">
+                <button onclick="toggleReviews()" id="load-btn" class="btn btn-play" style="width: auto; padding: 22px 100px;">Explore 5,000+ Reviews</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MASTER CONFIG ---
+        const CONFIG = {
+            links: [
+                { label: "Roblox Group", url: "https://www.roblox.com/communities/841655795/VIRALITY-GAMES#!/about" },
+                { label: "Roblox Group 2.", url: "https://www.roblox.com/communities/487077807/Virality-Obby#!/about" },
+                { label: "Roblox Group 3.", url: "https://www.roblox.com/communities/858079631/virality-fan#!/about" },
+                { label: "Developer X", url: "https://x.com/viralpostdaily1" }
+            ],
+            games: [
+                { name: "Rainbow pizza obby", icon: "🍕", link: "https://www.roblox.com/games/139685186353982/", grad: "var(--orange-grad)", info: "This fun and colorful game is designed to help people of all ages practice hand-eye coordination, problem-solving, and patience. 🌈" },
+                { name: "evervale", icon: "🌆", link: "https://www.roblox.com/games/13419977616/Evervale-RP", grad: "var(--blue-grad)", info: "Welcome to Evervale - the coolest virtual city for gamers! 👋🌆" },
+                { name: "name", icon: "icon", link: "link", grad: "grad", info: "Description" }
+            ],
+            store: [
+                { name: "Rainbow pizza obby - Gravity coil", icon: "🍥", price: "3  Robux", link: "https://www.roblox.com/game-pass/1644092766/gravity-coil", grad: "var(--purple-grad)" },
+                { name: "game - name", icon: "icon", price: "price", link: "link", grad: "var(--orange-grad)" }
+            ],
+            players: ["Opuadm", "whyismyuser4", "BaconGamer", "PizzaFan", "Builderman", "KreekFan", "Guest404", "RobloxPlayer"],
+            comments: ["Insane quality.", "Zero lag on mobile!", "The hub is beautiful.", "Best obby of 2026.", "Physics are spot on."],
+            officialReplies: ["Thank you for your patronage.", "We appreciate the support.", "Duly noted. Updates incoming."],
+            userReplies: ["Agreed!", "W studio.", "Facts.", "Add me!", "Best games on roblox ever"]
+        };
+
+        // --- STARFIELD ENGINE ---
+        const canvas = document.getElementById('star-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function initStars() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            stars = [];
+            for (let i = 0; i < 200; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5,
+                    speed: Math.random() * 0.5 + 0.1
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#fff";
+            stars.forEach(s => {
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+                s.y -= s.speed;
+                if (s.y < 0) s.y = canvas.height;
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        // --- RENDER CONTENT ---
+        function render() {
+            document.getElementById('social-anchor').innerHTML = CONFIG.links.map(l => `<a href="${l.url}" class="social-link">${l.label}</a>`).join('');
+            document.getElementById('games-container').innerHTML = CONFIG.games.map(g => `
+                <div class="box">
+                    <div class="visual-preview" style="background: ${g.grad}">${g.icon}</div>
+                    <h3>${g.name}</h3>
+                    <p style="color:#666; margin-top:10px;">${g.info}</p>
+                    <a href="${g.link}" class="btn btn-play">Launch Experience</a>
+                </div>
+            `).join('');
+            document.getElementById('store-container').innerHTML = CONFIG.store.map(s => `
+                <div class="box" style="text-align: center;">
+                    <div class="visual-preview" style="background: ${s.grad}; height: 160px;">${s.icon}</div>
+                    <h3>${s.name}</h3>
+                    <p style="color:#ffb800; font-weight:800; margin-top:10px;">${s.price}</p>
+                    <a href="${s.link}" class="btn btn-store">Buy Now</a>
+                </div>
+            `).join('');
+
+            const grid = document.getElementById('reviews-grid');
+            let html = "";
+            for(let i=0; i<10000; i++) {
+                const user = CONFIG.players[Math.floor(Math.random()*CONFIG.players.length)] + Math.floor(Math.random()*999);
+                html += `
+                    <div class="review-card">
+                        <div class="user-info"><span>${user}</span><span>★★★★★</span></div>
+                        <p style="color:#aaa;">"${CONFIG.comments[Math.floor(Math.random()*CONFIG.comments.length)]}"</p>
+                        <div class="reply-thread">
+                            ${Math.random() > 0.4 ? `<div class="reply-item official"><b>Virality Studio</b><br><span style="color:#666;">${CONFIG.officialReplies[Math.floor(Math.random()*CONFIG.officialReplies.length)]}</span></div>` : ''}
+                            ${Math.random() > 0.7 ? `<div class="reply-item"><b>${CONFIG.players[Math.floor(Math.random()*CONFIG.players.length)]}</b><br><span style="color:#555;">${CONFIG.userReplies[Math.floor(Math.random()*CONFIG.userReplies.length)]}</span></div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            grid.innerHTML += html;
+        }
+
+        // --- CURSOR ---
+        const c = document.getElementById('cursor'), r = document.getElementById('cursor-ring');
+        let mx = 0, my = 0, cx = 0, cy = 0, rx = 0, ry = 0;
+        document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+        function animateCursor() {
+            cx += (mx - cx) * 0.2; cy += (my - cy) * 0.2;
+            rx += (mx - rx) * 0.1; ry += (my - ry) * 0.1;
+            c.style.transform = `translate(${cx}px, ${cy}px)`;
+            r.style.transform = `translate(${rx - 20}px, ${ry - 20}px)`;
+            requestAnimationFrame(animateCursor);
+        }
+
+        function toggleReviews() {
+            const g = document.getElementById('reviews-grid');
+            g.classList.toggle('open');
+            document.getElementById('load-btn').innerText = g.classList.contains('open') ? "Collapse Log" : "Explore 5,000+ Reviews";
+            document.querySelector('.fade').style.display = g.classList.contains('open') ? 'none' : 'block';
+        }
+
+        window.onload = () => { initStars(); drawStars(); render(); animateCursor(); };
+        window.onresize = initStars;
+    </script>
+</body>
+</html>
