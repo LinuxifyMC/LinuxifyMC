@@ -1,18 +1,17 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
-import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.login.Login;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
 
 @SuppressWarnings("unused")
 public class Echo {
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
-        String fullCommand = String.join(" ", args);
+        String fullCommand = ArgUtils.joinAllArgs(args);
 
         int appendPos = fullCommand.indexOf(">>");
         int overwritePos = fullCommand.indexOf(">");
@@ -22,7 +21,7 @@ public class Echo {
             boolean append = appendPos >= 0;
             int pos = append ? appendPos : overwritePos;
 
-            String textToEcho = fullCommand.substring(5, pos).trim();
+            String textToEcho = fullCommand.substring(0, pos).trim();
             String fileName = fullCommand.substring(pos + (append ? 2 : 1)).trim();
 
             String userForHome = player.getName();
@@ -40,13 +39,13 @@ public class Echo {
                 } else {
                     fs.writeFile(fileName, textToEcho);
                 }
-                sender.sendMessage("");
             } catch (Exception e) {
-                sender.sendMessage(LinuxifyMC.shellname + ": echo: Failed to write to file '" + fileName + "'");
+                sender.sendMessage("echo: cannot write to '" + fileName + "': " + e.getMessage());
             }
         } else {
-            if (args.length > 1) {
-                String message = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+            String[] rest = ArgUtils.argsAfterCommand(args);
+            if (rest.length > 0) {
+                String message = String.join(" ", rest);
                 sender.sendMessage(message);
             } else {
                 sender.sendMessage("");

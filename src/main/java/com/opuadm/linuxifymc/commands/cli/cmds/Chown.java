@@ -3,6 +3,7 @@ package com.opuadm.linuxifymc.commands.cli.cmds;
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -10,12 +11,13 @@ import org.bukkit.entity.Player;
 @SuppressWarnings("unused")
 public class Chown {
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
-        if (args.length != 3) {
-            sender.sendMessage("Usage: chown [OPTION]... [OWNER][:[GROUP][ FILE...");
+        String newOwner = ArgUtils.getPositional(args, 1);
+        String path = ArgUtils.getPositional(args, 2);
+
+        if (newOwner == null || path == null) {
+            sender.sendMessage("Usage: chown [OPTION]... [OWNER][:[GROUP]] FILE...");
             return true;
         }
-        String newOwner = args[1];
-        String path = args[2];
 
         String userForHome = player.getName();
         var session = Login.getSession(player.getUniqueId());
@@ -28,9 +30,8 @@ public class Chown {
 
         try {
             fs.changeOwner(path, newOwner);
-            sender.sendMessage("");
         } catch (Exception e) {
-            sender.sendMessage(LinuxifyMC.shellname + ": chown: Failed to change owner for '" + path + "'");
+            sender.sendMessage(LinuxifyMC.shellname + ": chown: Failed to change owner for '" + path + "': " + e.getMessage());
         }
 
         return true;

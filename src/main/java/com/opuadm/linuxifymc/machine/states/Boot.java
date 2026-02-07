@@ -39,34 +39,16 @@ public class Boot {
             plr.sendMessage(msg4);
         }
 
-        String msg5 = MessageFormat.format("[    {0}] SMBIOS present.", Timer.getStamp(uuid));
-        CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg5);
-        if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
-            plr.sendMessage(msg5);
-        }
-
-        String msg6 = MessageFormat.format("[    {0}] EFI detected.", Timer.getStamp(uuid));
-        CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg6);
-        if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
-            plr.sendMessage(msg6);
-        }
-
-        String msg7 = MessageFormat.format("[    {0}] CPU: Generic", Timer.getStamp(uuid));
-        CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg7);
-        if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
-            plr.sendMessage(msg7);
-        }
-
         try {
             Thread.sleep(200);
         } catch (InterruptedException e) {
             CustomLogger.BootLog(plr.getPlayer(), Levels.ERROR, "Boot interrupted: " + e.getMessage());
         }
 
-        String msg8 = MessageFormat.format("[    {0}] Checking if player is new...", Timer.getStamp(uuid));
-        CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg8);
+        String msg5 = MessageFormat.format("[    {0}] Checking if player is new...", Timer.getStamp(uuid));
+        CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg5);
         if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
-            plr.sendMessage(msg8);
+            plr.sendMessage(msg5);
         }
 
         Object exists = FakeFS.DB == null ? null : FakeFS.DB.singleValueQuery("SELECT 1 FROM fs_saves WHERE player_uuid = ?", uuid.toString());
@@ -74,19 +56,19 @@ public class Boot {
         FakeFS plrFS = FakeFS.getPlayerFS(uuid, plr.getName());
 
         if (plrFS != null) {
-            String msg9 = MessageFormat.format("[    {0}] Loading filesystem...", Timer.getStamp(uuid));
-            CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg9);
+            String msg6 = MessageFormat.format("[    {0}] Loading filesystem...", Timer.getStamp(uuid));
+            CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg6);
             if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
-                plr.sendMessage(msg9);
+                plr.sendMessage(msg6);
             }
 
             plrFS.loadFS(uuid);
 
             if (isNew) {
-                String msg10 = MessageFormat.format("[    {0}] You are new here, so setting up system files...", Timer.getStamp(uuid));
-                CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg10);
+                String msg7 = MessageFormat.format("[    {0}] You are new here, so setting up system files...", Timer.getStamp(uuid));
+                CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg7);
                 if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
-                    plr.sendMessage(msg10);
+                    plr.sendMessage(msg7);
                 }
                 plrFS.setupSysFiles();
             }

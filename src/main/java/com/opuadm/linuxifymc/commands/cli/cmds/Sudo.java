@@ -3,12 +3,15 @@ package com.opuadm.linuxifymc.commands.cli.cmds;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.shell.SudoContext;
 import com.opuadm.linuxifymc.machine.shell.Shell;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,7 +20,7 @@ public class Sudo {
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (args == null || args.length <= 1) {
-            sender.sendMessage("usage: sudo <command>");
+            sender.sendMessage("usage: sudo [-u user] command [arg ...]");
             return false;
         }
 
@@ -26,13 +29,30 @@ public class Sudo {
             return false;
         }
 
-        String[] sub = Arrays.copyOfRange(args, 1, args.length);
-        String cmdName = sub[0].trim().toLowerCase();
+        String cmdName = ArgUtils.getPositional(args, 1);
+        if (cmdName == null) {
+            sender.sendMessage("usage: sudo [-u user] command [arg ...]");
+            return false;
+        }
+        cmdName = cmdName.trim().toLowerCase();
 
         String[] available = com.opuadm.linuxifymc.machine.shell.ShellVars.cmds;
         if (!Arrays.asList(available).contains(cmdName)) {
-            sender.sendMessage(cmdName + ": command not found");
+            sender.sendMessage("sudo: command not found: " + cmdName);
             return false;
+        }
+
+        List<String> sub = new ArrayList<>();
+        sub.add(cmdName);
+        for (int i = 1; i < args.length; i++) {
+            String a = args[i];
+            if (a == null) continue;
+            if ("-u".equals(a)) {
+                i++;
+                continue;
+            }
+            if (a.equalsIgnoreCase(cmdName)) continue;
+            sub.add(a);
         }
 
         try {
@@ -45,7 +65,10 @@ public class Sudo {
                 try { clazz = Class.forName(c); break; }
                 catch (ClassNotFoundException e) { lastEx = e; }
             }
-            if (clazz == null) throw lastEx;
+            if (clazz == null) {
+                assert lastEx != null;
+                throw lastEx;
+            }
 
             Object instance = clazz.getDeclaredConstructor().newInstance();
             Method m = clazz.getMethod("execute", CommandSender.class, Player.class, FakeFS.class, String[].class);
@@ -53,15 +76,15 @@ public class Sudo {
 
             SudoContext.enter();
             try {
-                return (boolean) m.invoke(instance, elevated, player, fs, sub);
+                return (boolean) m.invoke(instance, elevated, player, fs, sub.toArray(new String[0]));
             } finally {
                 SudoContext.exit();
             }
         } catch (ClassNotFoundException e) {
-            sender.sendMessage(cmdName + ": implementation not found");
+            sender.sendMessage("sudo: command not found: " + cmdName);
             return false;
         } catch (Exception e) {
-            sender.sendMessage(cmdName + ": error: " + e.getMessage());
+            sender.sendMessage("sudo: error: " + e.getMessage());
             LOG.log(Level.SEVERE, "Error executing sudo target " + cmdName, e);
             return false;
         }

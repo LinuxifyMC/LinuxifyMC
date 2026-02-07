@@ -4,12 +4,12 @@ import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
 import com.opuadm.linuxifymc.machine.shell.SudoContext;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Arrays;
 import java.util.UUID;
 
 @SuppressWarnings("unused")
@@ -49,7 +49,7 @@ public class Exit {
                     } catch (Exception ignore) {}
                 }
 
-                player.sendMessage("Exiting to " + prev + ".");
+                player.sendMessage("logout");
                 return true;
             }
 
@@ -72,12 +72,7 @@ public class Exit {
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (!(sender instanceof Player) || player == null) return false;
-        String[] forwarded;
-        if (args == null || args.length <= 1) {
-            forwarded = new String[0];
-        } else {
-            forwarded = Arrays.copyOfRange(args, 1, args.length);
-        }
+        String[] forwarded = ArgUtils.argsAfterCommand(args);
         if (forwarded.length > 0) {
             try {
                 Integer.parseInt(forwarded[0]);

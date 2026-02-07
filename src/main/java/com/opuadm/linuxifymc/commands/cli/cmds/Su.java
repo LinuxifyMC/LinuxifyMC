@@ -1,19 +1,18 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
-import com.opuadm.linuxifymc.Database;
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
-import com.opuadm.linuxifymc.machine.shell.SudoContext;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+@SuppressWarnings("unused")
 public class Su {
     private static final Map<UUID, String> previous = new ConcurrentHashMap<>();
 
@@ -40,8 +39,8 @@ public class Su {
             }
         }
 
-        LinuxifyMC plugin = JavaPlugin.getPlugin(LinuxifyMC.class);
-        Database dbObj = plugin.getDatabase();
+        LinuxifyMC plugin = org.bukkit.plugin.java.JavaPlugin.getPlugin(LinuxifyMC.class);
+        com.opuadm.linuxifymc.Database dbObj = plugin.getDatabase();
 
         if (!"root".equals(target)) {
             boolean exists = false;
@@ -55,7 +54,7 @@ public class Su {
                 }
             }
             if (!exists) {
-                player.sendMessage("su: unknown user: " + target);
+                player.sendMessage("su: user " + target + " does not exist");
                 return false;
             }
         }
@@ -78,7 +77,7 @@ public class Su {
             previous.put(player.getUniqueId(), player.getName());
 
             if ("root".equalsIgnoreCase(target)) {
-                SudoContext.enter();
+                com.opuadm.linuxifymc.machine.shell.SudoContext.enter();
             }
 
             if (fs != null) {
@@ -93,7 +92,7 @@ public class Su {
             }
 
             player.sendMessage("Password:");
-            player.sendMessage("You are now logged in as " + target + ".");
+            player.sendMessage("Switched to user " + target);
             return true;
         } catch (Exception e) {
             player.sendMessage("su: failed to switch user: " + e.getMessage());
@@ -103,12 +102,7 @@ public class Su {
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (!(sender instanceof Player) || player == null) return false;
-        String[] forwarded;
-        if (args == null || args.length <= 1) {
-            forwarded = new String[0];
-        } else {
-            forwarded = Arrays.copyOfRange(args, 1, args.length);
-        }
+        String[] forwarded = ArgUtils.argsAfterCommand(args);
         return run(player, forwarded, fs);
     }
 }

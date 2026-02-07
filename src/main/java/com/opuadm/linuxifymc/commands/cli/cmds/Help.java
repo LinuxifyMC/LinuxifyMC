@@ -5,14 +5,16 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 @SuppressWarnings("unused")
 public class Help {
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         int page = 1;
-        if (args.length > 1) {
+        String pageArg = ArgUtils.getPositional(args, 1);
+        if (pageArg != null) {
             try {
-                page = Integer.parseInt(args[1]);
+                page = Integer.parseInt(pageArg);
             } catch (NumberFormatException e) {
                 sender.sendMessage("Invalid page number");
             }
@@ -23,41 +25,32 @@ public class Help {
     }
 
     private void HelpSend(CommandSender sender, int page) {
-        // NOTE: 7 Commands per page
         if (page == 1) {
-            sender.sendMessage("LinuxifyMC " + LinuxifyMC.shellname + ", version " + LinuxifyMC.shellver + " (Minecraft)");
-            sender.sendMessage("[] = optional, <> = required, () = info");
-            sender.sendMessage("help [int]");
+            sender.sendMessage(LinuxifyMC.shellname + ", version " + LinuxifyMC.shellver);
+            sender.sendMessage("");
+            sender.sendMessage("These shell commands are defined internally. Type `help' to see this list.");
+            sender.sendMessage("");
             if (sender.hasPermission("linuxifymc.command.cli.nonlinuxcmds")) {
-                sender.sendMessage("test");
-                sender.sendMessage("uname [-s] [-v]");
-                sender.sendMessage("ls [-a] [-o] [path]");
-                sender.sendMessage("cd <path>");
-                sender.sendMessage("chmod <perms> <path>");
-                sender.sendMessage("chown <new_owner> <path>");
+                sender.sendMessage("  test                       uname [-s] [-v]");
+                sender.sendMessage("  ls [-a] [-l] [path]        cd <path>");
+                sender.sendMessage("  chmod <perms> <path>       chown <owner> <path>");
+                sender.sendMessage("  mkdir <directory>          rm [-r] <path>");
             } else {
-                sender.sendMessage("uname [-s] [-v]");
-                sender.sendMessage("ls [-a] [-o] [path]");
-                sender.sendMessage("cd <path>");
-                sender.sendMessage("chmod <perms> <path>");
-                sender.sendMessage("chown <new_owner> <path>");
-                sender.sendMessage("mkdir <directory_name>");
+                sender.sendMessage("  uname [-s] [-v]            ls [-a] [-l] [path]");
+                sender.sendMessage("  cd <path>                  chmod <perms> <path>");
+                sender.sendMessage("  chown <owner> <path>       mkdir <directory>");
             }
         } else if (page == 2) {
             if (sender.hasPermission("linuxifymc.command.cli.nonlinuxcmds")) {
-                sender.sendMessage("mkdir <directory_name>");
-                sender.sendMessage("rm [-r] <path>");
-                sender.sendMessage("cat <filename>");
-                sender.sendMessage("touch <filename>");
-                sender.sendMessage("echo [text] [>> file]");
-                sender.sendMessage("serverfetch");
-                sender.sendMessage("neofetch");
+                sender.sendMessage("  cat <filename>             touch <filename>");
+                sender.sendMessage("  echo [text] [>> file]      neofetch");
+                sender.sendMessage("  serverfetch                su [user]");
+                sender.sendMessage("  sudo <command>             exit");
             } else {
-                sender.sendMessage("rm [-r] <path>");
-                sender.sendMessage("cat <filename>");
-                sender.sendMessage("touch <filename>");
-                sender.sendMessage("echo [text] [>> file]");
-                sender.sendMessage("neofetch");
+                sender.sendMessage("  cat <filename>             touch <filename>");
+                sender.sendMessage("  echo [text] [>> file]      neofetch");
+                sender.sendMessage("  su [user]                  sudo <command>");
+                sender.sendMessage("  exit");
             }
         }
     }

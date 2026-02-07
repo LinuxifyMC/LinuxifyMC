@@ -2,7 +2,6 @@
 package com.opuadm.linuxifymc.machine.logs;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
-// import com.opuadm.linuxifymc.machine.fs.ConvertPerms;
 
 import org.bukkit.entity.Player;
 

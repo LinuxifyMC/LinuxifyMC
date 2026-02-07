@@ -1,6 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -9,17 +10,11 @@ import org.bukkit.entity.Player;
 public class LS {
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String path = fs.getCurrentDir();
-        boolean showHidden = false;
-        boolean showDetails = false;
+        boolean showHidden = ArgUtils.hasFlag(args, "-a");
+        boolean showDetails = ArgUtils.hasFlag(args, "-l") || ArgUtils.hasFlag(args, "-o");
 
-        for (int i = 1; i < args.length; i++) {
-            if (args[i].startsWith("-")) {
-                if (args[i].contains("a")) showHidden = true;
-                if (args[i].contains("o")) showDetails = true;
-                continue;
-            }
-            path = args[i];
-        }
+        String p = ArgUtils.getPositional(args, 1);
+        if (p != null) path = p;
 
         String listing = fs.listCurrentDir(path, showHidden, showDetails);
         if (listing != null) sender.sendMessage(listing);

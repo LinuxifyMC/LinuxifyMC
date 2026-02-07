@@ -1,7 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
-import com.opuadm.linuxifymc.LinuxifyMC;
+import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
@@ -13,26 +13,26 @@ public class Mkdir {
     private static final Logger LOG = Logger.getLogger("LinuxifyMC");
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
-        if (args.length != 2) {
+        String arg1 = ArgUtils.getPositional(args, 1);
+        if (arg1 == null) {
             sender.sendMessage("mkdir: missing operand");
             sender.sendMessage("Try 'mkdir --help' for more information.");
             return true;
         }
-        String arg1 = args[1];
 
         if (arg1.equals("--help") || arg1.equals("-h")) {
-            sender.sendMessage("Usage: mkdir DIRECTORY...");
+            sender.sendMessage("Usage: mkdir [OPTION]... DIRECTORY...");
             sender.sendMessage("Create the DIRECTORY(ies), if they do not already exist.");
+            sender.sendMessage("");
             sender.sendMessage("Options:");
             sender.sendMessage("  -h, --help     display this help and exit");
         } else {
             try {
                 LOG.fine("mkdir: user=" + player.getName() + " path=" + arg1 + " cwd=" + fs.getCurrentDir());
                 fs.makeDir(arg1, player.getName(), "777");
-                sender.sendMessage("");
                 LOG.fine("mkdir: finished makeDir for " + arg1);
             } catch (Exception e) {
-                sender.sendMessage(LinuxifyMC.shellname + ": mkdir: Failed to create directory '" + arg1 + "'");
+                sender.sendMessage("mkdir: cannot create directory '" + arg1 + "': " + e.getMessage());
                 LOG.warning("mkdir: exception while creating directory " + arg1 + ": " + e.getMessage());
             }
         }
