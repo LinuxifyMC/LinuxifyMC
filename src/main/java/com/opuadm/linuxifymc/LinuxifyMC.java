@@ -33,7 +33,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     public static String shellver = "0.1.1";
     public static String hostname = "linuxifymc";
 
-    int pluginId = 26603;
+    int pluginId = 33533;
 
     private Database database;
     @SuppressWarnings("unused")

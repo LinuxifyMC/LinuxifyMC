@@ -16,4 +16,4 @@ If you want to know what things are planned to be done, check out TODO.md. If yo
 
 This extension is **not** intended to be used as a Linux virtualizer, it's only intended to be a simulator. If you want a Linux virtualizer in Minecraft, you may want to check out [this](https://github.com/North-Western-Development/oc2r).
 
-![bStats](https://bstats.org/signatures/bukkit/LinuxifyMC.svg)
+![bStats](https://bstats.org/signatures/bukkit/LinuxifyMC%20Plugin.svg)
