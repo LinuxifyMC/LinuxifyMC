@@ -10,8 +10,6 @@ If you wonder why you cannot execute commands using `/cli <command>` directly li
 # Notes
 This plugin does not mimic the Linux terminal perfectly, but it does give you an experience of using a linux terminal in Minecraft. If you want to make this plugin more realistic, try contributing atleast.
 
-This plugin has currently been tested on Paper 1.21.4. Starting from LinuxifyMC 0.1.1.1, the native version will be Paper 1.21.8 (instead of 1.21.4).
-
 If you want to know what things are planned to be done, check out TODO.md. If you want to know about how you can contribute to this project correctly, visit CONTRIBUTING.md.
 
 This extension is **not** intended to be used as a Linux virtualizer, it's only intended to be a simulator. If you want a Linux virtualizer in Minecraft, you may want to check out [this](https://github.com/North-Western-Development/oc2r).
