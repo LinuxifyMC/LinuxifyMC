@@ -16,7 +16,7 @@ public class VM implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("LinuifyMC Virtual Computer Management for LinuxifyMC " + LinuxifyMC.version);
+            sender.sendMessage(LinuxifyMC.pluginName + " Virtual Computer Management for " + LinuxifyMC.pluginName + " " + LinuxifyMC.version);
             sender.sendMessage("Syntax: /vcomputer <start|stop>");
             return true;
         } else if (args.length == 1 && args[0].equals("start")) {

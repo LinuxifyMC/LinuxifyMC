@@ -28,7 +28,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     public static String pluginName = "LinuxifyMC";
     public static String version = "0.1.1";
     public static String kernelver = "0.1.1-generic";
-    public static String kernelname = "LinuxifyMC Kernel";
+    public static String kernelname = pluginName + " Kernel";
     public static String shellname = "mcsh";
     public static String shellver = "0.1.1";
     public static String hostname = "linuxifymc";
@@ -62,7 +62,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         Objects.requireNonNull(this.getCommand("vcomputer")).setExecutor(new VM());
         Objects.requireNonNull(this.getCommand("vcomputer")).setTabCompleter(new VM());
 
-        getLogger().info("LinuxifyMC has been enabled. Version: " + version);
+        getLogger().info(pluginName + " has been enabled. Version: " + version);
         if (!Bukkit.getVersion().contains("1.21")) {
             getLogger().info("NOTE: You are running a version which isn't an 1.21.x version. Please note that this plugin may not work under other versions of Minecraft that aren't 1.21.x, so proceed with caution.");
             getLogger().info("NOTE: Current Native Version is 1.21.4.");
@@ -87,7 +87,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
             database.close();
             FakeFS.DB = null;
         }
-        getLogger().info("LinuxifyMC has been disabled.");
+        getLogger().info(pluginName + " has been disabled.");
     }
 
     @EventHandler

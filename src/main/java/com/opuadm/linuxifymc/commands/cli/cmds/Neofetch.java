@@ -30,7 +30,7 @@ public class Neofetch {
         };
 
         String[] info = new String[] {
-                "LinuxifyMC " + LinuxifyMC.version,
+                LinuxifyMC.pluginName + " " + LinuxifyMC.version,
                 LinuxifyMC.kernelname + " " + LinuxifyMC.kernelver,
                 LinuxifyMC.shellname + " " + LinuxifyMC.shellver + " (Minecraft)",
                 "Current Player: " + player.getName()
@@ -52,7 +52,7 @@ public class Neofetch {
             String artLine = art[i];
             String infoLine = i < info.length ? info[i] : "";
 
-            String paddedInfo = String.format("%-" + longestInfo + "s", infoLine);
+            String paddedInfo = infoLine + " ".repeat(longestInfo - infoLine.length());
 
             if (isPlayer) {
                 StringBuilder fullLine = new StringBuilder();
@@ -61,7 +61,7 @@ public class Neofetch {
                 int currentPos = artLine.length();
                 int spacesNeeded = INFO_START - currentPos;
 
-                fullLine.append(" ".repeat(Math.max(0, spacesNeeded)));
+                fullLine.repeat(" ", Math.max(0, spacesNeeded));
 
                 fullLine.append(paddedInfo);
 

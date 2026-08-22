@@ -1,5 +1,5 @@
 name: LinuxifyMC
-version: '0.1.1'
+version: '${project.version}'
 main: com.opuadm.linuxifymc.LinuxifyMC
 api-version: '1.21'
 authors: [ OpuaYT ]
@@ -34,6 +34,9 @@ permissions:
     linuxifymc.command.cli.nonlinuxcmds:
         description: Allows the player to use non-linux commands
         default: true
+    linuxifymc.command.sudo:
+        description: Allows the player to run commands with elevated permissions
+        default: op
     linuxifymc.command.bootlogs.sendinchat:
         description: Allows to send logs in the chat (to yourself only)
         default: true

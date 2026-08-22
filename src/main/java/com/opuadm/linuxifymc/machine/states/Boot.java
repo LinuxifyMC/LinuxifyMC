@@ -15,7 +15,7 @@ import java.util.UUID;
 public class Boot {
     public static void Init(Player plr) {
         UUID uuid = plr.getUniqueId();
-        String msg1 = MessageFormat.format("[    {0}] LinuxifyMC Kernel version {1} {2}@{3}", Timer.getStamp(uuid), LinuxifyMC.kernelver, plr.getName(), LinuxifyMC.hostname);
+        String msg1 = MessageFormat.format("[    {0}] {1} version {2} {3}@{4}", Timer.getStamp(uuid), LinuxifyMC.kernelname, LinuxifyMC.kernelver, plr.getName(), LinuxifyMC.hostname);
         CustomLogger.BootLog(plr.getPlayer(), Levels.GENERAL, msg1);
         if (plr.hasPermission("linuxifymc.command.bootlogs.sendinchat")) {
             plr.sendMessage(msg1);

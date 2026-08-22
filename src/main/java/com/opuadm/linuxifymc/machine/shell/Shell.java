@@ -4,6 +4,7 @@ import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.states.Power;
 import com.opuadm.linuxifymc.machine.login.Login;
 import com.opuadm.linuxifymc.commands.cli.cmds.Sudo;
+import com.opuadm.linuxifymc.LinuxifyMC;
 
 import net.kyori.adventure.text.Component;
 
@@ -27,7 +28,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Shell implements CommandExecutor, TabCompleter {
-    private static final Logger LOG = Logger.getLogger("LinuxifyMC");
+    private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
     private static final String CMDS_PKG = "com.opuadm.linuxifymc.commands.cli.cmds.";
 
     @Override
@@ -153,6 +154,7 @@ public class Shell implements CommandExecutor, TabCompleter {
         return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
     }
 
+    @SuppressWarnings("deprecation")
     private record OutputCapturingSender(CommandSender delegate, Player player,
                                          StringBuilder out) implements CommandSender {
 
@@ -324,6 +326,7 @@ public class Shell implements CommandExecutor, TabCompleter {
         return out;
     }
 
+    @SuppressWarnings("deprecation")
     public record ElevatedSender(CommandSender delegate, Player player) implements CommandSender {
 
         @Override

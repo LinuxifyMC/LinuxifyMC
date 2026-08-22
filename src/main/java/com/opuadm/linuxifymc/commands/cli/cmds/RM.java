@@ -1,6 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.LinuxifyMC;
 
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
@@ -14,16 +15,19 @@ import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class RM {
-    private static final Logger LOG = Logger.getLogger("LinuxifyMC");
+    private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
-        boolean recursive = false;
-        boolean force = false;
-        String path = ArgUtils.getPositional(args, 1);
+        boolean recursive;
+        boolean force;
+        String path;
+        String normPath;
+        String fileContent;
+        String directory;
 
-        if (ArgUtils.hasFlag(args, "--force") || ArgUtils.hasFlag(args, "-f") || ArgUtils.hasFlag(args, "-F")) {
-            force = true;
-        }
+        recursive = ArgUtils.hasFlag(args, "--recursive") || hasShortFlag(args, 'r') || hasShortFlag(args, 'R');
+        force = ArgUtils.hasFlag(args, "--force") || hasShortFlag(args, 'f') || hasShortFlag(args, 'F');
+        path = ArgUtils.getPositional(args, 1);
 
         if (path == null) {
             sender.sendMessage("Usage: rm [-rRf] PATH...");
@@ -34,9 +38,9 @@ public class RM {
             path = "/home/" + player.getName() + path.substring(1);
         }
 
-        String normPath = getString(fs, path);
+        normPath = getString(fs, path);
 
-        String fileContent = fs.getFile(normPath);
+        fileContent = fs.getFile(normPath);
         if (fileContent != null) {
             try {
                 LOG.fine("rm: user=" + player.getName() + " path=" + path + " cwd=" + fs.getCurrentDir());
@@ -49,9 +53,41 @@ public class RM {
             return true;
         }
 
+        directory = fs.getDir(normPath);
+        if (directory != null) {
+            if (!recursive) {
+                if (!force) sender.sendMessage("rm: cannot remove '" + path + "': Is a directory");
+                return true;
+            }
+            if (directory.equals("/")) {
+                if (!force) sender.sendMessage("rm: refusing to remove '/'");
+                return true;
+            }
+            fs.deleteDir(directory, recursive, force);
+            return true;
+        }
+
         if (!force) sender.sendMessage("rm: cannot remove '" + path + "': No such file or directory");
 
         return true;
+    }
+
+    private static boolean hasShortFlag(String[] args, char flag) {
+        int argumentIndex;
+        int flagIndex;
+        String argument;
+
+        if (args == null) return false;
+        for (argumentIndex = 1; argumentIndex < args.length; argumentIndex++) {
+            argument = args[argumentIndex];
+            if (argument == null || argument.length() < 2 || !argument.startsWith("-") || argument.startsWith("--")) {
+                continue;
+            }
+            for (flagIndex = 1; flagIndex < argument.length(); flagIndex++) {
+                if (argument.charAt(flagIndex) == flag) return true;
+            }
+        }
+        return false;
     }
 
     private static @NotNull String getString(FakeFS fs, String path) {

@@ -4,6 +4,7 @@ import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.shell.SudoContext;
 import com.opuadm.linuxifymc.machine.shell.Shell;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
+import com.opuadm.linuxifymc.LinuxifyMC;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,7 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Sudo {
-    private static final Logger LOG = Logger.getLogger("LinuxifyMC");
+    private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (args == null || args.length <= 1) {

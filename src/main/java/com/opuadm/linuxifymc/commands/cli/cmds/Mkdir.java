@@ -2,6 +2,7 @@ package com.opuadm.linuxifymc.commands.cli.cmds;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
+import com.opuadm.linuxifymc.LinuxifyMC;
 
 import org.bukkit.entity.Player;
 import org.bukkit.command.CommandSender;
@@ -10,7 +11,7 @@ import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class Mkdir {
-    private static final Logger LOG = Logger.getLogger("LinuxifyMC");
+    private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String arg1 = ArgUtils.getPositional(args, 1);
