@@ -36,5 +36,5 @@ public class ShellVars
 
     public static List<String> ChmodPerms() { return List.of("777", "644", "755", "700", "766"); }
 
-    public static List<String> RMOpts() { return List.of("-r", "-f"); }
+    public static List<String> RMOpts() { return List.of("-r", "-R", "-f", "--recursive", "--force"); }
 }

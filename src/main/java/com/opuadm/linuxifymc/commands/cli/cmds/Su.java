@@ -76,10 +76,6 @@ public class Su {
 
             previous.put(player.getUniqueId(), player.getName());
 
-            if ("root".equalsIgnoreCase(target)) {
-                com.opuadm.linuxifymc.machine.shell.SudoContext.enter();
-            }
-
             if (fs != null) {
                 String cur = fs.getCurrentDir();
                 String home = "/home/" + target;
@@ -91,7 +87,6 @@ public class Su {
                 }
             }
 
-            player.sendMessage("Password:");
             player.sendMessage("Switched to user " + target);
             return true;
         } catch (Exception e) {

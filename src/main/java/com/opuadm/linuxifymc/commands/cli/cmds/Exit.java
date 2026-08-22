@@ -37,11 +37,7 @@ public class Exit {
                 Login.setSession(u, restored);
                 Su.removePreviousUser(u);
 
-                if ("root".equalsIgnoreCase(prev)) {
-                    SudoContext.enter();
-                } else {
-                    SudoContext.exit();
-                }
+                SudoContext.exit();
 
                 if (fs != null) {
                     try {

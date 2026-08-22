@@ -154,7 +154,6 @@ public class Shell implements CommandExecutor, TabCompleter {
         return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
     }
 
-    @SuppressWarnings("deprecation")
     private record OutputCapturingSender(CommandSender delegate, Player player,
                                          StringBuilder out) implements CommandSender {
 
@@ -168,11 +167,13 @@ public class Shell implements CommandExecutor, TabCompleter {
             for (String m : messages) sendMessage(m);
         }
 
+        @Deprecated
         @Override
         public void sendMessage(UUID uuid, String message) {
             if (player.getUniqueId().equals(uuid)) sendMessage(message);
         }
 
+        @Deprecated
         @Override
         public void sendMessage(UUID uuid, String... messages) {
             if (player.getUniqueId().equals(uuid)) sendMessage(messages);
@@ -326,7 +327,6 @@ public class Shell implements CommandExecutor, TabCompleter {
         return out;
     }
 
-    @SuppressWarnings("deprecation")
     public record ElevatedSender(CommandSender delegate, Player player) implements CommandSender {
 
         @Override
@@ -339,12 +339,14 @@ public class Shell implements CommandExecutor, TabCompleter {
                 delegate.sendMessage(messages);
             }
 
+            @Deprecated
             @Override
             public void sendMessage(UUID uuid, String message) {
                 boolean match = player.getUniqueId().equals(uuid);
                 if (match) delegate.sendMessage(message);
             }
 
+            @Deprecated
             @Override
             public void sendMessage(UUID uuid, String... messages) {
                 boolean match = player.getUniqueId().equals(uuid);

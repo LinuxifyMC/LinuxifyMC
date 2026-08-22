@@ -386,6 +386,7 @@ public class FakeFS {
             if (owner == null || owner.isEmpty()) {
                 owner = this.plr != null ? this.plr.toLowerCase() : "root";
             }
+            owner = SudoContext.getEffectiveUser(playerUuid, owner);
             if (perms == null || perms.length() != 3) {
                 perms = "755";
             }
@@ -410,7 +411,7 @@ public class FakeFS {
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w") && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: makeDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
@@ -466,7 +467,7 @@ public class FakeFS {
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w") && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: makeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
@@ -477,6 +478,7 @@ public class FakeFS {
             if (owner == null || owner.isEmpty()) {
                 owner = this.plr != null ? this.plr.toLowerCase() : "root";
             }
+            owner = SudoContext.getEffectiveUser(playerUuid, owner);
             if (perms == null || perms.length() != 3) {
                 perms = "644";
             }
@@ -534,7 +536,7 @@ public class FakeFS {
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w") && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: deleteFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
@@ -633,7 +635,7 @@ public class FakeFS {
                 String parentOwner = (String) prow.get(0);
                 String parentGroup = (String) prow.get(1);
                 String parentPerms = (String) prow.get(2);
-                if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+                if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w") && SudoContext.lacksSudoPrivileges(playerUuid)) {
                     if (LinuxifyMC.debugMode) {
                         logger.fine("E: deleteDir: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                     }
@@ -776,7 +778,7 @@ public class FakeFS {
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w") && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: writeFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
@@ -830,7 +832,7 @@ public class FakeFS {
             String parentOwner = (String) prow.get(0);
             String parentGroup = (String) prow.get(1);
             String parentPerms = (String) prow.get(2);
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w") && !SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w") && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: appendFile: permission denied for player=" + this.plr + " parent=" + parent + " perms=" + parentPerms);
                 }
@@ -909,8 +911,8 @@ public class FakeFS {
                 curPerms = meta.get(2) != null ? meta.get(2).toString() : null;
             }
 
-            if ((curPerms == null || lacksPermissions(curPerms, curOwner, curGroup, this.plr, "w"))
-                    && !SudoContext.isSudo()) {
+            if ((curPerms == null || lacksPermissions(curPerms, curOwner, curGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w"))
+                    && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: changePermissions: permission denied for player=" + this.plr + " path=" + path);
                 }
@@ -977,7 +979,7 @@ public class FakeFS {
             if (ownerRes != null && !ownerRes.isEmpty()) {
                 curOwner = ownerRes.getFirst().getFirst().toString();
             }
-            if ((curOwner == null || !curOwner.equalsIgnoreCase(this.plr)) && !SudoContext.isSudo()) {
+            if ((curOwner == null || !curOwner.equalsIgnoreCase(SudoContext.getEffectiveUser(playerUuid, this.plr))) && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: changeOwner: permission denied for player=" + this.plr + " path=" + path);
                 }
@@ -1049,8 +1051,8 @@ public class FakeFS {
             String parentGroup = (String) row.get(1);
             String parentPerms = (String) row.get(2);
 
-            if (lacksPermissions(parentPerms, parentOwner, parentGroup, this.plr, "w")
-                    && !SudoContext.isSudo()) {
+            if (lacksPermissions(parentPerms, parentOwner, parentGroup, SudoContext.getEffectiveUser(playerUuid, this.plr), "w")
+                    && SudoContext.lacksSudoPrivileges(playerUuid)) {
                 if (LinuxifyMC.debugMode) {
                     logger.fine("E: getString: write permission denied for player=" + this.plr + " on parent=" + parentDir + " perms=" + parentPerms + " owner=" + parentOwner + " group=" + parentGroup);
                 }

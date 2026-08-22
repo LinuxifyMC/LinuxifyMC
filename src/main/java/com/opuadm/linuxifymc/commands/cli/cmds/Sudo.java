@@ -1,13 +1,14 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.Database;
+import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.shell.SudoContext;
 import com.opuadm.linuxifymc.machine.shell.Shell;
-import com.opuadm.linuxifymc.commands.cli.ArgUtils;
-import com.opuadm.linuxifymc.LinuxifyMC;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -20,6 +21,16 @@ public class Sudo {
     private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
+        String targetUser;
+        String cmdName;
+        int commandIndex;
+        int argumentIndex;
+        List<String> sub;
+        Class<?> clazz;
+        Object instance;
+        Method method;
+        CommandSender elevated;
+
         if (args == null || args.length <= 1) {
             sender.sendMessage("usage: sudo [-u user] command [arg ...]");
             return false;
@@ -30,54 +41,44 @@ public class Sudo {
             return false;
         }
 
-        String cmdName = ArgUtils.getPositional(args, 1);
-        if (cmdName == null) {
-            sender.sendMessage("usage: sudo [-u user] command [arg ...]");
-            return false;
+        targetUser = "root";
+        commandIndex = 1;
+        if ("-u".equals(args[commandIndex])) {
+            if (args.length <= commandIndex + 2) {
+                sender.sendMessage("usage: sudo [-u user] command [arg ...]");
+                return false;
+            }
+            targetUser = args[commandIndex + 1];
+            commandIndex += 2;
         }
+
+        cmdName = args[commandIndex];
         cmdName = cmdName.trim().toLowerCase();
 
-        String[] available = com.opuadm.linuxifymc.machine.shell.ShellVars.cmds;
-        if (!Arrays.asList(available).contains(cmdName)) {
+        if (!userExists(player, targetUser)) {
+            sender.sendMessage("sudo: unknown user: " + targetUser);
+            return false;
+        }
+
+        if (!Arrays.asList(com.opuadm.linuxifymc.machine.shell.ShellVars.cmds).contains(cmdName)) {
             sender.sendMessage("sudo: command not found: " + cmdName);
             return false;
         }
 
-        List<String> sub = new ArrayList<>();
-        sub.add(cmdName);
-        for (int i = 1; i < args.length; i++) {
-            String a = args[i];
-            if (a == null) continue;
-            if ("-u".equals(a)) {
-                i++;
-                continue;
-            }
-            if (a.equalsIgnoreCase(cmdName)) continue;
-            sub.add(a);
+        sub = new ArrayList<>();
+        for (argumentIndex = commandIndex; argumentIndex < args.length; argumentIndex++) {
+            sub.add(args[argumentIndex]);
         }
 
         try {
-            String CMDS_PKG = "com.opuadm.linuxifymc.commands.cli.cmds.";
-            String cap = cmdName.substring(0, 1).toUpperCase() + cmdName.substring(1).toLowerCase();
-            String[] candidates = {CMDS_PKG + cap, CMDS_PKG + cmdName.toUpperCase(), CMDS_PKG + cmdName.toLowerCase()};
-            Class<?> clazz = null;
-            ClassNotFoundException lastEx = null;
-            for (String c : candidates) {
-                try { clazz = Class.forName(c); break; }
-                catch (ClassNotFoundException e) { lastEx = e; }
-            }
-            if (clazz == null) {
-                assert lastEx != null;
-                throw lastEx;
-            }
+            clazz = resolveCommandClass(cmdName);
+            instance = clazz.getDeclaredConstructor().newInstance();
+            method = clazz.getMethod("execute", CommandSender.class, Player.class, FakeFS.class, String[].class);
+            elevated = new Shell.ElevatedSender(sender, player);
 
-            Object instance = clazz.getDeclaredConstructor().newInstance();
-            Method m = clazz.getMethod("execute", CommandSender.class, Player.class, FakeFS.class, String[].class);
-            CommandSender elevated = new Shell.ElevatedSender(sender, player);
-
-            SudoContext.enter();
+            SudoContext.enter(player.getUniqueId(), targetUser);
             try {
-                return (boolean) m.invoke(instance, elevated, player, fs, sub.toArray(new String[0]));
+                return (boolean) method.invoke(instance, elevated, player, fs, sub.toArray(new String[0]));
             } finally {
                 SudoContext.exit();
             }
@@ -87,6 +88,48 @@ public class Sudo {
         } catch (Exception e) {
             sender.sendMessage("sudo: error: " + e.getMessage());
             LOG.log(Level.SEVERE, "Error executing sudo target " + cmdName, e);
+            return false;
+        }
+    }
+
+    private static Class<?> resolveCommandClass(String cmdName) throws ClassNotFoundException {
+        String packageName;
+        String capitalized;
+        String[] candidates;
+        int candidateIndex;
+
+        packageName = "com.opuadm.linuxifymc.commands.cli.cmds.";
+        capitalized = cmdName.substring(0, 1).toUpperCase() + cmdName.substring(1).toLowerCase();
+        candidates = new String[] {
+                packageName + capitalized,
+                packageName + cmdName.toUpperCase(),
+                packageName + cmdName.toLowerCase()
+        };
+        for (candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
+            try {
+                return Class.forName(candidates[candidateIndex]);
+            } catch (ClassNotFoundException ignored) {
+            }
+        }
+        throw new ClassNotFoundException(cmdName);
+    }
+
+    private static boolean userExists(Player player, String username) {
+        LinuxifyMC plugin;
+        Database database;
+        Object result;
+
+        if ("root".equalsIgnoreCase(username)) return true;
+        plugin = JavaPlugin.getPlugin(LinuxifyMC.class);
+        database = plugin.getDatabase();
+        if (database == null) return false;
+        try {
+            result = database.singleValueQuery(
+                    "SELECT 1 FROM vm_users WHERE player_uuid = ? AND username = ? LIMIT 1",
+                    player.getUniqueId().toString(), username);
+            return result != null;
+        } catch (Exception exception) {
+            LOG.log(Level.WARNING, "Failed to resolve sudo user " + username, exception);
             return false;
         }
     }
