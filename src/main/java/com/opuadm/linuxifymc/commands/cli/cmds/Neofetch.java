@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.key.Key;
+import net.kyori.adventure.text.format.Style;
 
 @SuppressWarnings("unused")
 public class Neofetch {
@@ -65,7 +66,7 @@ public class Neofetch {
 
                 fullLine.append(paddedInfo);
 
-                player.sendMessage(Component.text(fullLine.toString()).font(uniform));
+                player.sendMessage(Component.text(fullLine.toString(), Style.empty().font(uniform)));
             } else {
                 int currentPos = artLine.length();
                 int spacesNeeded = INFO_START - currentPos;

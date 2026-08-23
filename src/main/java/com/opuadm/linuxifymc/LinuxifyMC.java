@@ -21,16 +21,24 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class LinuxifyMC extends JavaPlugin implements Listener {
+    private static final Package PACKAGE_METADATA = LinuxifyMC.class.getPackage();
+    private static final String NATIVE_MINECRAFT_VERSION = requireBuildValue(
+            PACKAGE_METADATA.getSpecificationVersion(),
+            "linuxifymc.nativeMinecraftVersion",
+            "Specification-Version");
     private LoginPrompt loginPrompt;
 
     public static final boolean debugMode = true;
 
     public static String pluginName = "LinuxifyMC";
-    public static String version = "0.1.1";
-    public static String kernelver = "0.1.1-generic";
+    public static String version = requireBuildValue(
+            PACKAGE_METADATA.getImplementationVersion(),
+            "linuxifymc.version",
+            "Implementation-Version");
+    public static String kernelver = version + "-generic";
     public static String kernelname = pluginName + " Kernel";
     public static String shellname = "mcsh";
-    public static String shellver = "0.1.1";
+    public static String shellver = version;
     public static String hostname = "linuxifymc";
 
     int pluginId = 33533;
@@ -63,13 +71,15 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         Objects.requireNonNull(this.getCommand("vcomputer")).setTabCompleter(new VM());
 
         getLogger().info(pluginName + " has been enabled. Version: " + version);
-        if (!Bukkit.getVersion().contains("1.21")) {
-            getLogger().info("NOTE: You are running a version which isn't an 1.21.x version. Please note that this plugin may not work under other versions of Minecraft that aren't 1.21.x, so proceed with caution.");
-            getLogger().info("NOTE: Current Native Version is 1.21.4.");
+        if (!Bukkit.getBukkitVersion().equals(NATIVE_MINECRAFT_VERSION)
+                && !Bukkit.getBukkitVersion().startsWith(NATIVE_MINECRAFT_VERSION + "-")) {
+            getLogger().info("NOTE: Current Native Version is " + NATIVE_MINECRAFT_VERSION + ".");
             getLogger().info("Current Version:" + Bukkit.getVersion());
         }
 
-        @SuppressWarnings("unused") Metrics metrics = new Metrics(this, pluginId);
+        if (!Bukkit.getVersion().contains("MockBukkit")) {
+            new Metrics(this, pluginId);
+        }
     }
 
     @Override
@@ -93,7 +103,14 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        UUID uuid = player.getUniqueId();
+
+        ensurePlayerUsers(player);
+    }
+
+    void ensurePlayerUsers(Player player) {
+        UUID uuid;
+
+        uuid = player.getUniqueId();
 
         try {
             if (database != null) {
@@ -132,5 +149,18 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
 
     public com.opuadm.linuxifymc.machine.login.LoginPrompt getLoginPrompt() {
         return loginPrompt;
+    }
+
+    private static String requireBuildValue(String manifestValue, String propertyName, String name) {
+        String value;
+
+        value = manifestValue;
+        if (value == null || value.isBlank()) {
+            value = System.getProperty(propertyName);
+        }
+        if (value == null || value.isBlank()) {
+            throw new ExceptionInInitializerError("Missing " + name);
+        }
+        return value;
     }
 }

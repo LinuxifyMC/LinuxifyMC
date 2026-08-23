@@ -1,7 +1,7 @@
 name: LinuxifyMC
 version: '${project.version}'
 main: com.opuadm.linuxifymc.LinuxifyMC
-api-version: '1.21'
+api-version: '1.17'
 authors: [ OpuaYT ]
 description: Linux Terminal Simulator for Minecraft
 website: https://opuadm.com/

@@ -23,75 +23,97 @@ public class LoginPrompt implements Listener {
     }
 
     private static String decorateHostname(String host) {
+        int[] cps;
+        int index;
+        int len;
+        StringBuilder builder;
+
         if (host == null || host.isEmpty()) return host;
-        int[] cps = host.codePoints().toArray();
-        int len = cps.length;
+        cps = host.codePoints().toArray();
+        len = cps.length;
         cps[0] = Character.toUpperCase(cps[0]);
         if (len >= 2) {
             cps[len - 2] = Character.toUpperCase(cps[len - 2]);
             cps[len - 1] = Character.toUpperCase(cps[len - 1]);
         }
-        StringBuilder sb = new StringBuilder();
-        for (int cp : cps) sb.appendCodePoint(cp);
-        return sb.toString();
+        builder = new StringBuilder();
+        index = 0;
+        while (index < cps.length) {
+            builder.appendCodePoint(cps[index]);
+            index++;
+        }
+        return builder.toString();
     }
 
     public void prompt(Player player) {
-        if (player == null) return;
-        UUID u = player.getUniqueId();
-        if (Login.isLoggedIn(u)) return;
+        UUID uuid;
 
-        awaiting.add(u);
+        if (player == null) return;
+        uuid = player.getUniqueId();
+        if (Login.isLoggedIn(uuid)) return;
+
+        awaiting.add(uuid);
         player.sendMessage(decorateHostname(LinuxifyMC.hostname) + " " + LinuxifyMC.version);
         player.sendMessage("Login:");
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (awaiting.remove(u)) {
+            if (awaiting.remove(uuid)) {
                 player.sendMessage("Login timed out.");
             }
         }, 20L * 30);
     }
 
     @EventHandler
-    public void onChat(AsyncChatEvent ev) {
-        Player player = ev.getPlayer();
-        UUID u = player.getUniqueId();
+    public void onChat(AsyncChatEvent event) {
+        Player player;
+        String messageText;
+        UUID uuid;
 
-        if (!awaiting.contains(u)) {
-            if (Login.isLoggedIn(u)) awaiting.remove(u);
+        player = event.getPlayer();
+        uuid = player.getUniqueId();
+
+        if (!awaiting.contains(uuid)) {
+            if (Login.isLoggedIn(uuid)) awaiting.remove(uuid);
             return;
         }
 
-        ev.renderer((source, sourceDisplayName, message, viewer) -> Component.empty());
+        event.renderer((source, sourceDisplayName, message, viewer) -> Component.empty());
 
-        String messageText = PlainTextComponentSerializer.plainText().serialize(ev.message()).trim();
+        messageText = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
         if (messageText.isEmpty()) {
             plugin.getServer().getScheduler().runTask(plugin, () -> player.sendMessage("Empty username. Try again."));
             return;
         }
 
         plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (Login.isLoggedIn(u)) {
-                awaiting.remove(u);
+            com.opuadm.linuxifymc.Database database;
+            Login login;
+            Object disabledResult;
+            Object existsResult;
+            boolean userDisabled;
+            boolean userExists;
+
+            if (Login.isLoggedIn(uuid)) {
+                awaiting.remove(uuid);
                 return;
             }
 
-            com.opuadm.linuxifymc.Database db = null;
-            if (plugin instanceof com.opuadm.linuxifymc.LinuxifyMC l) {
-                db = l.getDatabase();
+            database = null;
+            if (plugin instanceof com.opuadm.linuxifymc.LinuxifyMC) {
+                database = ((com.opuadm.linuxifymc.LinuxifyMC) plugin).getDatabase();
             }
 
-            boolean userExists = false;
-            boolean userDisabled = false;
-            if (db != null) {
+            userExists = false;
+            userDisabled = false;
+            if (database != null) {
                 try {
-                    Object existsObj = db.singleValueQuery("SELECT 1 FROM vm_users WHERE player_uuid = ? AND username = ? LIMIT 1",
+                    existsResult = database.singleValueQuery("SELECT 1 FROM vm_users WHERE player_uuid = ? AND username = ? LIMIT 1",
                             player.getUniqueId().toString(), messageText);
-                    userExists = existsObj != null;
+                    userExists = existsResult != null;
 
-                    Object disabledObj = db.singleValueQuery("SELECT 1 FROM vm_disabled_users WHERE player_uuid = ? AND username = ? LIMIT 1",
+                    disabledResult = database.singleValueQuery("SELECT 1 FROM vm_disabled_users WHERE player_uuid = ? AND username = ? LIMIT 1",
                             player.getUniqueId().toString(), messageText);
-                    userDisabled = disabledObj != null;
+                    userDisabled = disabledResult != null;
                 } catch (Exception ignore) {
                     userExists = false;
                 }
@@ -108,18 +130,20 @@ public class LoginPrompt implements Listener {
                 player.sendMessage("Login:");
                 return;
             }
-            Login login = new Login(player);
+            login = new Login(player);
             login.login();
 
-            awaiting.remove(u);
+            awaiting.remove(uuid);
             player.sendMessage("Welcome, " + messageText + "!");
         });
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent ev) {
-        UUID u = ev.getPlayer().getUniqueId();
-        awaiting.remove(u);
-        new Login(ev.getPlayer()).logout();
+    public void onQuit(PlayerQuitEvent event) {
+        UUID uuid;
+
+        uuid = event.getPlayer().getUniqueId();
+        awaiting.remove(uuid);
+        new Login(event.getPlayer()).logout();
     }
 }

@@ -6,13 +6,18 @@
 
     <groupId>com.opuadm.linuxifymc</groupId>
     <artifactId>LinuxifyMC</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <packaging>jar</packaging>
 
     <name>LinuxifyMC</name>
 
     <properties>
         <java.version>21</java.version>
+        <junit.version>6.1.3</junit.version>
+        <jdk.toolchain.version>[21,)</jdk.toolchain.version>
+        <maven.test.skip>true</maven.test.skip>
+        <native.minecraft.version>1.21.4</native.minecraft.version>
+        <paper.version>${native.minecraft.version}-R0.1-SNAPSHOT</paper.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
@@ -22,10 +27,39 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>select-jdk-toolchain</goal>
+                        </goals>
+                        <configuration>
+                            <version>${jdk.toolchain.version}</version>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.15.0</version>
                 <configuration>
                     <release>${java.version}</release>
+                    <proc>none</proc>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Implementation-Version>${project.version}</Implementation-Version>
+                            <Specification-Version>${native.minecraft.version}</Specification-Version>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
             <plugin>
@@ -57,6 +91,12 @@
                             </filters>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <manifestEntries>
+                                        <Implementation-Version>${project.version}</Implementation-Version>
+                                        <Specification-Version>${native.minecraft.version}</Specification-Version>
+                                    </manifestEntries>
+                                </transformer>
                             </transformers>
                             <relocations>
                                 <relocation>
@@ -64,6 +104,46 @@
                                     <shadedPattern>com.opuadm.bstats</shadedPattern>
                                 </relocation>
                             </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.5</version>
+                <configuration>
+                    <classesDirectory>${project.build.directory}/test-runtime-classes</classesDirectory>
+                    <systemPropertyVariables>
+                        <linuxifymc.nativeMinecraftVersion>${native.minecraft.version}</linuxifymc.nativeMinecraftVersion>
+                        <linuxifymc.version>${project.version}</linuxifymc.version>
+                        <testPluginJar>${project.build.directory}/${project.build.finalName}-tests.jar</testPluginJar>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>test-plugin</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${maven.test.skip}</skip>
+                            <target>
+                                <mkdir dir="${project.build.directory}/test-runtime-classes" />
+                                <jar destfile="${project.build.directory}/${project.build.finalName}-tests.jar">
+                                    <manifest>
+                                        <attribute name="Implementation-Version" value="${project.version}" />
+                                        <attribute name="Specification-Version" value="${native.minecraft.version}" />
+                                    </manifest>
+                                    <fileset dir="${project.build.outputDirectory}" />
+                                </jar>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -84,11 +164,23 @@
         </repository>
     </repositories>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.4-R0.1-SNAPSHOT</version>
+            <version>${paper.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -101,5 +193,127 @@
             <artifactId>bstats-bukkit</artifactId>
             <version>3.2.1</version>
         </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.18.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>mockbukkit-1.17.1</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>1.17.1-R0.1-SNAPSHOT</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.seeseemelk</groupId>
+                    <artifactId>MockBukkit-v1.17</artifactId>
+                    <version>1.13.0</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mockbukkit-1.18.2</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>1.18.2-R0.1-SNAPSHOT</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.seeseemelk</groupId>
+                    <artifactId>MockBukkit-v1.18</artifactId>
+                    <version>2.85.2</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mockbukkit-1.19.4</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>1.19.4-R0.1-SNAPSHOT</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.seeseemelk</groupId>
+                    <artifactId>MockBukkit-v1.19</artifactId>
+                    <version>3.1.0</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mockbukkit-1.20.6</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>1.20.6-R0.1-SNAPSHOT</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>com.github.seeseemelk</groupId>
+                    <artifactId>MockBukkit-v1.20</artifactId>
+                    <version>3.93.2</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mockbukkit-1.21.11</id>
+            <properties>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.mockbukkit.mockbukkit</groupId>
+                    <artifactId>mockbukkit-v1.21</artifactId>
+                    <version>4.116.3</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mockbukkit-26.1.2</id>
+            <properties>
+                <jdk.toolchain.version>[25,)</jdk.toolchain.version>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>26.1.2.build.72-stable</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.mockbukkit.mockbukkit</groupId>
+                    <artifactId>mockbukkit-v26.1.2</artifactId>
+                    <version>4.115.0</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>mockbukkit-26.2</id>
+            <properties>
+                <jdk.toolchain.version>[25,)</jdk.toolchain.version>
+                <maven.test.skip>false</maven.test.skip>
+                <paper.version>26.2.build.111-stable</paper.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.mockbukkit.mockbukkit</groupId>
+                    <artifactId>mockbukkit-v26.2</artifactId>
+                    <version>4.116.1</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
