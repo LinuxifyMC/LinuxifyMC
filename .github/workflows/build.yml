@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
       - run: mvn clean package
       - uses: actions/upload-artifact@v7

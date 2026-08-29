@@ -8,5 +8,5 @@ Thanks for being interested in contributing to LinuxifyMC. Here are some guideli
 - Keep your PRs fairly small for a faster and easier review by the maintainers.
 ## Development Environment Setup
 - JetBrains IntelliJ IDEA (optional but recommended unless you have a bad PC)
-- JDK Version 21 or Later
+- JDK Version 25 or Later
 - A minecraft testing server you can test the plugin on (Java 21 or Later)
