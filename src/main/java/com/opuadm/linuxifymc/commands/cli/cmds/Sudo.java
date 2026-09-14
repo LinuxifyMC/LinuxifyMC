@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.Database;
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
@@ -10,25 +12,22 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Sudo {
+public class Sudo implements CliCommand {
     private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String targetUser;
         String cmdName;
+        String binary;
         int commandIndex;
         int argumentIndex;
         List<String> sub;
-        Class<?> clazz;
-        Object instance;
-        Method method;
         CommandSender elevated;
 
         if (args == null || args.length <= 1) {
@@ -53,14 +52,15 @@ public class Sudo {
         }
 
         cmdName = args[commandIndex];
-        cmdName = cmdName.trim().toLowerCase();
+        cmdName = cmdName.trim();
 
         if (!userExists(player, targetUser)) {
             sender.sendMessage("sudo: unknown user: " + targetUser);
             return false;
         }
 
-        if (!Arrays.asList(com.opuadm.linuxifymc.machine.shell.ShellVars.cmds).contains(cmdName)) {
+        binary = Shell.resolveBinary(fs, cmdName);
+        if (binary == null) {
             sender.sendMessage("sudo: command not found: " + cmdName);
             return false;
         }
@@ -71,47 +71,19 @@ public class Sudo {
         }
 
         try {
-            clazz = resolveCommandClass(cmdName);
-            instance = clazz.getDeclaredConstructor().newInstance();
-            method = clazz.getMethod("execute", CommandSender.class, Player.class, FakeFS.class, String[].class);
             elevated = new Shell.ElevatedSender(sender, player);
 
             SudoContext.enter(player.getUniqueId(), targetUser);
             try {
-                return (boolean) method.invoke(instance, elevated, player, fs, sub.toArray(new String[0]));
+                return new Shell().runBinary(elevated, player, fs, binary, cmdName, sub.toArray(new String[0]));
             } finally {
                 SudoContext.exit();
             }
-        } catch (ClassNotFoundException e) {
-            sender.sendMessage("sudo: command not found: " + cmdName);
-            return false;
         } catch (Exception e) {
             sender.sendMessage("sudo: error: " + e.getMessage());
             LOG.log(Level.SEVERE, "Error executing sudo target " + cmdName, e);
             return false;
         }
-    }
-
-    private static Class<?> resolveCommandClass(String cmdName) throws ClassNotFoundException {
-        String packageName;
-        String capitalized;
-        String[] candidates;
-        int candidateIndex;
-
-        packageName = "com.opuadm.linuxifymc.commands.cli.cmds.";
-        capitalized = cmdName.substring(0, 1).toUpperCase() + cmdName.substring(1).toLowerCase();
-        candidates = new String[] {
-                packageName + capitalized,
-                packageName + cmdName.toUpperCase(),
-                packageName + cmdName.toLowerCase()
-        };
-        for (candidateIndex = 0; candidateIndex < candidates.length; candidateIndex++) {
-            try {
-                return Class.forName(candidates[candidateIndex]);
-            } catch (ClassNotFoundException ignored) {
-            }
-        }
-        throw new ClassNotFoundException(cmdName);
     }
 
     private static boolean userExists(Player player, String username) {

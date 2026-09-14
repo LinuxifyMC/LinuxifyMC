@@ -3,7 +3,7 @@ package com.opuadm.linuxifymc;
 import java.io.File;
 import java.sql.*;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 
 @SuppressWarnings("SqlSourceToSinkFlow")
@@ -59,6 +59,15 @@ public class Database {
                         "content TEXT, " +
                         "PRIMARY KEY (player_uuid, path))");
 
+                stmt.executeUpdate("CREATE TABLE IF NOT EXISTS fs_links (" +
+                        "player_uuid TEXT NOT NULL, " +
+                        "path TEXT NOT NULL, " +
+                        "target TEXT NOT NULL, " +
+                        "owner TEXT NOT NULL, " +
+                        "group_name TEXT NOT NULL, " +
+                        "permissions TEXT NOT NULL, " +
+                        "PRIMARY KEY (player_uuid, path))");
+
                 stmt.executeUpdate("CREATE TABLE IF NOT EXISTS fs_saves (" +
                         "player_uuid TEXT PRIMARY KEY, " +
                         "player_name TEXT NOT NULL, " +
@@ -86,23 +95,24 @@ public class Database {
         }
     }
 
+    public static String escapeLike(String value) {
+        if (value == null) return null;
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
     public List<List<Object>> query(String sql, Object... params) {
         List<List<Object>> results = new ArrayList<>();
 
         try {
             ensureConnection();
 
-            if (sql.trim().toUpperCase().startsWith("SELECT")) {
-                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                    setParameters(stmt, params);
-                    try (ResultSet rs = stmt.executeQuery()) {
-                        results = resultSetToList(rs);
-                    }
-                }
-            } else {
-                try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                    setParameters(stmt, params);
-                    stmt.executeUpdate();
+            if (!sql.trim().toUpperCase().startsWith("SELECT")) {
+                throw new IllegalArgumentException("query() accepts SELECT statements only: " + sql);
+            }
+            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                setParameters(stmt, params);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    results = resultSetToList(rs);
                 }
             }
         } catch (SQLException e) {
@@ -112,7 +122,6 @@ public class Database {
         return results;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
     public int executeUpdate(String sql, Object... params) {
         try {
             ensureConnection();
@@ -143,16 +152,14 @@ public class Database {
         return null;
     }
 
-    @SuppressWarnings("UnusedReturnValue")
-    public <T> T runInTransaction(Function<Connection, T> work) {
+    public void runInTransaction(Consumer<Connection> work) {
         try {
             ensureConnection();
             boolean oldAutoCommit = connection.getAutoCommit();
             try {
                 connection.setAutoCommit(false);
-                T result = work.apply(connection);
+                work.accept(connection);
                 connection.commit();
-                return result;
             } catch (Exception ex) {
                 try {
                     connection.rollback();
@@ -209,11 +216,5 @@ public class Database {
                 plugin.getLogger().log(Level.WARNING, "Error closing database", e);
             }
         }
-    }
-
-    @SuppressWarnings("unused")
-    public Connection getConnection() throws SQLException {
-        ensureConnection();
-        return connection;
     }
 }

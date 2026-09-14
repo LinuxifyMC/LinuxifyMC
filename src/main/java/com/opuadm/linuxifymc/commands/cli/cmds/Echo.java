@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
@@ -8,8 +10,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 
-@SuppressWarnings("unused")
-public class Echo {
+public class Echo implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String fullCommand = ArgUtils.joinAllArgs(args);
 

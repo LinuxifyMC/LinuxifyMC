@@ -19,12 +19,43 @@ import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+import com.opuadm.linuxifymc.commands.cli.cmds.Help;
+import com.opuadm.linuxifymc.commands.cli.cmds.Uname;
+import com.opuadm.linuxifymc.commands.cli.cmds.CD;
+import com.opuadm.linuxifymc.commands.cli.cmds.Ls;
+import com.opuadm.linuxifymc.commands.cli.cmds.Chmod;
+import com.opuadm.linuxifymc.commands.cli.cmds.Chown;
+import com.opuadm.linuxifymc.commands.cli.cmds.Mkdir;
+import com.opuadm.linuxifymc.commands.cli.cmds.RM;
+import com.opuadm.linuxifymc.commands.cli.cmds.Cat;
+import com.opuadm.linuxifymc.commands.cli.cmds.Serverfetch;
+import com.opuadm.linuxifymc.commands.cli.cmds.Neofetch;
+import com.opuadm.linuxifymc.commands.cli.cmds.Echo;
+import com.opuadm.linuxifymc.commands.cli.cmds.Touch;
+import com.opuadm.linuxifymc.commands.cli.cmds.Sudo;
+import com.opuadm.linuxifymc.commands.cli.cmds.Su;
+import com.opuadm.linuxifymc.commands.cli.cmds.Exit;
+import com.opuadm.linuxifymc.commands.cli.cmds.Ln;
+import com.opuadm.linuxifymc.commands.cli.cmds.Grep;
+import com.opuadm.linuxifymc.commands.cli.cmds.Build;
+import com.opuadm.linuxifymc.machine.bin.BinCompiler;
+import com.opuadm.linuxifymc.machine.bin.BinContext;
+import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.machine.fs.FsRegistry;
+import com.opuadm.linuxifymc.machine.shell.Shell;
+import com.opuadm.linuxifymc.machine.shell.ShellVars;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LinuxifyMCTest {
@@ -56,6 +87,140 @@ class LinuxifyMCTest {
 
         unmock = mockBukkit.getMethod("unmock");
         unmock.invoke(null);
+    }
+
+    private Player mockShellPlayer(UUID playerId, List<String> messages) {
+        return (Player) Proxy.newProxyInstance(
+                Player.class.getClassLoader(),
+                new Class<?>[]{Player.class},
+                (proxy, method, arguments) -> {
+                    switch (method.getName()) {
+                        case "getUniqueId":
+                            return playerId;
+                        case "getName":
+                            return "TestPlayer";
+                        case "hasPermission":
+                        case "isOp":
+                            return true;
+                        case "sendMessage":
+                            if (arguments != null) {
+                                for (Object argument : arguments) {
+                                    if (argument instanceof String text) {
+                                        messages.add(text);
+                                    } else if (argument instanceof String[] texts) {
+                                        messages.addAll(Arrays.asList(texts));
+                                    }
+                                }
+                            }
+                            return null;
+                        default:
+                            break;
+                    }
+                    Class<?> returnType = method.getReturnType();
+                    if (returnType == boolean.class) {
+                        return false;
+                    }
+                    if (returnType == int.class) {
+                        return 0;
+                    }
+                    if (returnType == long.class) {
+                        return 0L;
+                    }
+                    return null;
+                });
+    }
+
+    @Test
+    void coreBinariesLoadAsCommands() {
+        List<String> failures = new ArrayList<>();
+        for (String cmd : ShellVars.cmds) {
+            try {
+                String className = BinCompiler.coreClass(cmd);
+                if (className == null) {
+                    failures.add(cmd + ": no class");
+                    continue;
+                }
+                byte[] own = BinCompiler.ownBytes(className);
+                if (own == null) {
+                    failures.add(cmd + ": no bytes");
+                    continue;
+                }
+                Class<?> clazz = BinCompiler.loadCore(className, own);
+                Object instance = clazz.getDeclaredConstructor().newInstance();
+                if (!(instance instanceof CliCommand)) {
+                    failures.add(cmd + ": not a CliCommand");
+                }
+            } catch (Throwable failure) {
+                failures.add(cmd + ": " + failure);
+            }
+        }
+        assertTrue(failures.isEmpty(), String.join(", ", failures));
+    }
+
+    @Test
+    void commandClassesInstantiate() {
+        List<CliCommand> commands = Arrays.asList(
+                new Help(),
+                new Uname(),
+                new CD(),
+                new Ls(),
+                new Chmod(),
+                new Chown(),
+                new Mkdir(),
+                new RM(),
+                new Ln(),
+                new Grep(),
+                new Cat(),
+                new Serverfetch(),
+                new Neofetch(),
+                new Echo(),
+                new Touch(),
+                new Sudo(),
+                new Su(),
+                new Exit(),
+                new Build()
+        );
+        assertEquals(ShellVars.cmds.length, commands.size());
+        for (CliCommand cmd : commands) {
+            assertNotNull(cmd);
+        }
+    }
+
+    @Test
+    void dispatchedBinariesExecuteWithoutThrowing() {
+        UUID playerId = UUID.randomUUID();
+        List<String> messages = new ArrayList<>();
+        Player player = mockShellPlayer(playerId, messages);
+        FakeFS fs = FsRegistry.getPlayerFS(playerId, player.getName());
+        assertNotNull(fs);
+        fs.setupSysFiles();
+        List<String> failures = new ArrayList<>();
+        for (String cmd : ShellVars.cmds) {
+            try {
+                new Shell().runBinary(player, player, fs, "/usr/bin/" + cmd, cmd, new String[]{cmd});
+            } catch (Throwable failure) {
+                failures.add(cmd + ": " + failure);
+            }
+        }
+        assertTrue(failures.isEmpty(), String.join(", ", failures));
+    }
+
+    @Test
+    void binaryContextSnapshots() {
+        UUID playerId = UUID.randomUUID();
+        List<String> messages = new ArrayList<>();
+        Player player = mockShellPlayer(playerId, messages);
+        BinContext ctx = BinCompiler.context(player, null, "piped in", "bob");
+        assertEquals("piped in", ctx.stdin());
+        assertEquals("bob", ctx.user());
+        assertTrue(ctx.time() > 0L);
+        assertNull(ctx.fs());
+        ctx.out("hello");
+        for (int i = 0; i < 200; i++) {
+            ctx.out("line");
+        }
+        assertEquals("hello", messages.getFirst());
+        assertTrue(messages.contains("[output truncated]"));
     }
 
     @Test

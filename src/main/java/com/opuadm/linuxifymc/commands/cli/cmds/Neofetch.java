@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.LinuxifyMC;
 
@@ -10,8 +12,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.format.Style;
 
-@SuppressWarnings("unused")
-public class Neofetch {
+public class Neofetch implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String[] art = new String[] {
                 "           +++==            ",

@@ -2,6 +2,7 @@
 package com.opuadm.linuxifymc.machine.logs;
 
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.machine.fs.FsRegistry;
 
 import org.bukkit.entity.Player;
 
@@ -12,7 +13,7 @@ public class CustomLogger {
 
     public static void BootLog(Player player, Levels level, String message) {
         if (player == null) return;
-        FakeFS playerFS = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+        FakeFS playerFS = FsRegistry.getPlayerFS(player.getUniqueId(), player.getName());
         String logMessage = "[ " + level.name() + " ] " + message;
         if (playerFS == null) {
             return;
@@ -26,7 +27,7 @@ public class CustomLogger {
 
     public static void Log(Player player, Levels level, String message) {
         if (player == null) return;
-        FakeFS playerFS = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+        FakeFS playerFS = FsRegistry.getPlayerFS(player.getUniqueId(), player.getName());
         String logMessage = "[ " + level.name() + " ] " + message;
         if (playerFS == null) {
             return;
@@ -40,7 +41,7 @@ public class CustomLogger {
 
     public static void MiscLog(Player player, Levels level, String message) {
         if (player == null) return;
-        FakeFS playerFS = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+        FakeFS playerFS = FsRegistry.getPlayerFS(player.getUniqueId(), player.getName());
         String logMessage = "[ " + level.name() + " ] " + message;
         if (playerFS == null) {
             return;
@@ -51,4 +52,5 @@ public class CustomLogger {
             playerFS.makeFile(miscLogFilePath, player.getName(), "777", logMessage);
         }
     }
+
 }

@@ -1,13 +1,15 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.LinuxifyMC;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
-@SuppressWarnings("unused")
-public class Chmod {
+public class Chmod implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String permissions = ArgUtils.getPositional(args, 1);
         String path = ArgUtils.getPositional(args, 2);

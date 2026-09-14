@@ -8,7 +8,6 @@
           <option name="environmentProperties">
             <map />
           </option>
-          <option name="jreName" value="#JAVA_HOME" />
           <option name="mavenProperties">
             <map />
           </option>
@@ -46,7 +45,6 @@
       </option>
     </MavenSettings>
     <method v="2">
-      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="-Pmockbukkit-1.17.1 clean test" />
       <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="-Pmockbukkit-1.18.2 clean test" />
       <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="-Pmockbukkit-1.19.4 clean test" />
       <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="-Pmockbukkit-1.20.6 clean test" />

@@ -3,6 +3,7 @@ package com.opuadm.linuxifymc.machine.states;
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.clock.Timer;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.machine.fs.FsRegistry;
 
 import org.bukkit.entity.Player;
 import org.bukkit.Bukkit;
@@ -117,7 +118,7 @@ public class Power {
                 }
 
                 try {
-                    FakeFS fs = FakeFS.getPlayerFS(playerId, p.getName());
+                    FakeFS fs = FsRegistry.getPlayerFS(playerId, p.getName());
                     if (fs != null) {
                         if (!fs.saveFS(p, fs)) {
                             p.sendMessage("Warning: Failed to save filesystem state");

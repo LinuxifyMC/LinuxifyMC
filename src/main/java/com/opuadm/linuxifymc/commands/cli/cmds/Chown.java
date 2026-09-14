@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
@@ -8,8 +10,8 @@ import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@SuppressWarnings("unused")
-public class Chown {
+public class Chown implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String newOwner = ArgUtils.getPositional(args, 1);
         String path = ArgUtils.getPositional(args, 2);

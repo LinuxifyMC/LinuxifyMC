@@ -1,13 +1,15 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@SuppressWarnings("unused")
-public class LS {
+public class Ls implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String path = fs.getCurrentDir();
         boolean showHidden = ArgUtils.hasFlag(args, "-a");

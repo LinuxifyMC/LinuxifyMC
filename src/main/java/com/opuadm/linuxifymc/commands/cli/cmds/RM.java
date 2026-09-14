@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.LinuxifyMC;
 
@@ -13,10 +15,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.logging.Logger;
 
-@SuppressWarnings("unused")
-public class RM {
+public class RM implements CliCommand {
     private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         boolean recursive;
         boolean force;

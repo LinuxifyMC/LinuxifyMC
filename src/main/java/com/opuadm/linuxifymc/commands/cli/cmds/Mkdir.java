@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 import com.opuadm.linuxifymc.LinuxifyMC;
@@ -9,10 +11,10 @@ import org.bukkit.command.CommandSender;
 
 import java.util.logging.Logger;
 
-@SuppressWarnings("unused")
-public class Mkdir {
+public class Mkdir implements CliCommand {
     private static final Logger LOG = Logger.getLogger(LinuxifyMC.pluginName);
 
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String arg1 = ArgUtils.getPositional(args, 1);
         if (arg1 == null) {

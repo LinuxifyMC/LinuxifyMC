@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.LinuxifyMC;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -7,8 +9,8 @@ import org.bukkit.entity.Player;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 
-@SuppressWarnings("unused")
-public class Help {
+public class Help implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         int page = 1;
         String pageArg = ArgUtils.getPositional(args, 1);
@@ -30,28 +32,17 @@ public class Help {
             sender.sendMessage("");
             sender.sendMessage("These shell commands are defined internally. Type `help' to see this list.");
             sender.sendMessage("");
-            if (sender.hasPermission("linuxifymc.command.cli.nonlinuxcmds")) {
-                sender.sendMessage("  test                       uname [-s] [-v]");
-                sender.sendMessage("  ls [-a] [-l] [path]        cd <path>");
-                sender.sendMessage("  chmod <perms> <path>       chown <owner> <path>");
-                sender.sendMessage("  mkdir <directory>          rm [-r] <path>");
-            } else {
-                sender.sendMessage("  uname [-s] [-v]            ls [-a] [-l] [path]");
-                sender.sendMessage("  cd <path>                  chmod <perms> <path>");
-                sender.sendMessage("  chown <owner> <path>       mkdir <directory>");
-            }
+            sender.sendMessage("  uname [-s] [-v]            ls [-a] [-l] [path]");
+            sender.sendMessage("  ls [-a] [-l] [path]        cd <path>");
+            sender.sendMessage("  chmod <perms> <path>       chown <owner> <path>");
+            sender.sendMessage("  mkdir <directory>          rm [-r] <path>");
         } else if (page == 2) {
-            if (sender.hasPermission("linuxifymc.command.cli.nonlinuxcmds")) {
-                sender.sendMessage("  cat <filename>             touch <filename>");
-                sender.sendMessage("  echo [text] [>> file]      neofetch");
-                sender.sendMessage("  serverfetch                su [user]");
-                sender.sendMessage("  sudo <command>             exit");
-            } else {
-                sender.sendMessage("  cat <filename>             touch <filename>");
-                sender.sendMessage("  echo [text] [>> file]      neofetch");
-                sender.sendMessage("  su [user]                  sudo <command>");
-                sender.sendMessage("  exit");
-            }
+            sender.sendMessage("  cat <filename>             touch <filename>");
+            sender.sendMessage("  echo [text] [>> file]      neofetch");
+            sender.sendMessage("  serverfetch                su [user]");
+            sender.sendMessage("  sudo <command>             exit");
+            sender.sendMessage("  grep [pattern] [file]      ln -s <target> <link>");
+            sender.sendMessage("  build <source> [-o binary]");
         }
     }
 }

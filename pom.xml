@@ -232,22 +232,6 @@
 
     <profiles>
         <profile>
-            <id>mockbukkit-1.17.1</id>
-            <properties>
-                <maven.test.skip>false</maven.test.skip>
-                <paper.version>1.17.1-R0.1-SNAPSHOT</paper.version>
-                <plugin.api.version>1.17</plugin.api.version>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>com.github.seeseemelk</groupId>
-                    <artifactId>MockBukkit-v1.17</artifactId>
-                    <version>1.13.0</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
             <id>mockbukkit-1.18.2</id>
             <properties>
                 <maven.test.skip>false</maven.test.skip>

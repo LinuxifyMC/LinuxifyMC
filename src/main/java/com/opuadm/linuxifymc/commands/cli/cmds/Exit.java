@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
@@ -12,8 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
 
-@SuppressWarnings("unused")
-public class Exit {
+public class Exit implements CliCommand {
     public static boolean run(Player player, FakeFS fs) {
         if (player == null) return false;
 
@@ -66,6 +67,7 @@ public class Exit {
         }
     }
 
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (!(sender instanceof Player) || player == null) return false;
         String[] forwarded = ArgUtils.argsAfterCommand(args);

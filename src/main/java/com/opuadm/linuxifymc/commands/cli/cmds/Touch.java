@@ -1,14 +1,15 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@SuppressWarnings("unused")
-public class Touch {
-    @SuppressWarnings("unused")
+public class Touch implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         String fileName = ArgUtils.getPositional(args, 1);
         if (fileName == null) {

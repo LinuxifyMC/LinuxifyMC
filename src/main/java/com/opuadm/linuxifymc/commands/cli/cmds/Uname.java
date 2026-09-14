@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.commands.cli.ArgUtils;
@@ -7,12 +9,18 @@ import com.opuadm.linuxifymc.commands.cli.ArgUtils;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-@SuppressWarnings("unused")
-public class Uname {
+public class Uname implements CliCommand {
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         boolean s = ArgUtils.hasFlag(args, "-s") || ArgUtils.hasFlag(args, "--kernel-name");
         boolean v = ArgUtils.hasFlag(args, "-v") || ArgUtils.hasFlag(args, "--kernel-version");
+        boolean all = ArgUtils.hasFlag(args, "-a") || ArgUtils.hasFlag(args, "--all");
         boolean help = ArgUtils.hasFlag(args, "--help") || ArgUtils.hasFlag(args, "-h");
+
+        if (all) {
+            s = true;
+            v = true;
+        }
 
         if (!s && !v && !help) {
             sender.sendMessage(LinuxifyMC.kernelname);
@@ -27,6 +35,7 @@ public class Uname {
             sender.sendMessage("Options:");
             sender.sendMessage("  -s, --kernel-name     print the kernel name");
             sender.sendMessage("  -v, --kernel-version  print the kernel version");
+            sender.sendMessage("  -a, --all             print all information");
             sender.sendMessage("  -h, --help            display this help and exit");
             return true;
         }

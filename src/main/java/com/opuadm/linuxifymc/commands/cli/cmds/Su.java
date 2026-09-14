@@ -1,5 +1,7 @@
 package com.opuadm.linuxifymc.commands.cli.cmds;
 
+import com.opuadm.linuxifymc.commands.cli.CliCommand;
+
 import com.opuadm.linuxifymc.LinuxifyMC;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
 import com.opuadm.linuxifymc.machine.login.Login;
@@ -12,8 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@SuppressWarnings("unused")
-public class Su {
+public class Su implements CliCommand {
     private static final Map<UUID, String> previous = new ConcurrentHashMap<>();
 
     public static String getPreviousUser(UUID uuid) {
@@ -95,6 +96,7 @@ public class Su {
         }
     }
 
+    @Override
     public boolean execute(CommandSender sender, Player player, FakeFS fs, String[] args) {
         if (!(sender instanceof Player) || player == null) return false;
         String[] forwarded = ArgUtils.argsAfterCommand(args);

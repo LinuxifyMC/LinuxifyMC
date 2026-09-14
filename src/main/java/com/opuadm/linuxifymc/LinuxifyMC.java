@@ -2,6 +2,7 @@ package com.opuadm.linuxifymc;
 
 import com.opuadm.linuxifymc.commands.linuxifymc.VM;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.machine.fs.FsRegistry;
 import com.opuadm.linuxifymc.machine.shell.Shell;
 import com.opuadm.linuxifymc.commands.linuxifymc.Settings;
 import com.opuadm.linuxifymc.machine.states.Power;
@@ -44,10 +45,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     int pluginId = 33533;
 
     private Database database;
-    @SuppressWarnings("unused")
-    private FakeFS fs;
 
-    @SuppressWarnings("unused")
     public Database getDatabase() {
         return database;
     }
@@ -70,6 +68,8 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
         Objects.requireNonNull(this.getCommand("vcomputer")).setExecutor(new VM());
         Objects.requireNonNull(this.getCommand("vcomputer")).setTabCompleter(new VM());
 
+        FakeFS.registerChannels(this);
+
         getLogger().info(pluginName + " has been enabled. Version: " + version);
         if (!Bukkit.getBukkitVersion().equals(NATIVE_MINECRAFT_VERSION)
                 && !Bukkit.getBukkitVersion().startsWith(NATIVE_MINECRAFT_VERSION + "-")) {
@@ -84,10 +84,10 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        // FakeFS.cleanup();
+        FakeFS.unregisterChannels(this);
         if (database != null) {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+                FakeFS fs = FsRegistry.getPlayerFS(player.getUniqueId(), player.getName());
                 if (fs != null) {
                     fs.saveFS(player, fs);
                     // FakeFS.removePlayerFS(player.getUniqueId());
@@ -133,7 +133,7 @@ public final class LinuxifyMC extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        FakeFS fs = FakeFS.getPlayerFS(player.getUniqueId(), player.getName());
+        FakeFS fs = FsRegistry.getPlayerFS(player.getUniqueId(), player.getName());
         if (fs != null && database != null) {
             fs.saveFS(player, fs);
         }

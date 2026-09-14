@@ -25,14 +25,8 @@ permissions:
     linuxifymc.command.settings:
         description: Allows the player to change settings
         default: true
-    linuxifymc.command.settings.global:
-        description: Allows the player to change global settings
-        default: op
     linuxifymc.command.settings.user:
         description: Allows the player to change user settings
-        default: true
-    linuxifymc.command.cli.nonlinuxcmds:
-        description: Allows the player to use non-linux commands
         default: true
     linuxifymc.command.sudo:
         description: Allows the player to run commands with elevated permissions
@@ -42,4 +36,7 @@ permissions:
         default: true
     linuxifymc.command.vcomputer:
         description: Allows the player to manage their own virtual linuxifyMC computer
+        default: true
+    linuxifymc.binaries.build:
+        description: Allows the player to compile binaries with the build command
         default: true

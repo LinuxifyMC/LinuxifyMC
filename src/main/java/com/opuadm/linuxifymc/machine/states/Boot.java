@@ -2,6 +2,7 @@ package com.opuadm.linuxifymc.machine.states;
 
 import com.opuadm.linuxifymc.machine.clock.Timer;
 import com.opuadm.linuxifymc.machine.fs.FakeFS;
+import com.opuadm.linuxifymc.machine.fs.FsRegistry;
 import com.opuadm.linuxifymc.machine.logs.CustomLogger;
 import com.opuadm.linuxifymc.machine.logs.Levels;
 import com.opuadm.linuxifymc.LinuxifyMC;
@@ -53,7 +54,7 @@ public class Boot {
 
         Object exists = FakeFS.DB == null ? null : FakeFS.DB.singleValueQuery("SELECT 1 FROM fs_saves WHERE player_uuid = ?", uuid.toString());
         boolean isNew = (exists == null);
-        FakeFS plrFS = FakeFS.getPlayerFS(uuid, plr.getName());
+        FakeFS plrFS = FsRegistry.getPlayerFS(uuid, plr.getName());
 
         if (plrFS != null) {
             String msg6 = MessageFormat.format("[    {0}] Loading filesystem...", Timer.getStamp(uuid));

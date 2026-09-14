@@ -6,3 +6,51 @@ database:
   synchronous: 1       # 0=OFF, 1=NORMAL, 2=FULL, 3=EXTRA
   auto_vacuum: 1       # 0=NONE, 1=FULL, 2=INCREMENTAL
   timeout: 30          # Connection timeout in seconds
+
+# Binary sandbox: denied entries are refused, allowed entries are exempt. Empty list disables that side.
+binaries:
+  sandbox:
+    allowed:
+      - "com/opuadm/linuxifymc/machine/bin/BinContext"
+      - "com/opuadm/linuxifymc/machine/fs/FakeFS"
+      - "java/lang/invoke/StringConcatFactory"
+      - "java/lang/invoke/MethodType"
+      - "java/lang/invoke/MethodHandles$Lookup"
+      - "java/lang/invoke/MethodHandles"
+      - "java/lang/invoke/CallSite"
+      - "org/bukkit/ChatColor"
+      - "org/bukkit/Color"
+      - "org/bukkit/util/Vector"
+      - "java/net/URI"
+      - "java/net/URLEncoder"
+      - "java/net/URLDecoder"
+    denied:
+      - "java/lang/System"
+      - "java/lang/Runtime"
+      - "java/lang/ProcessBuilder"
+      - "java/lang/Process"
+      - "java/io/"
+      - "java/nio/"
+      - "java/net/"
+      - "java/lang/reflect/"
+      - "lookup"
+      - "publicLookup"
+      - "LambdaMetafactory"
+      - "java/lang/Thread"
+      - "java/util/concurrent/"
+      - "java/lang/ClassLoader"
+      - "java/lang/ThreadGroup"
+      - "jdk/"
+      - "sun/"
+      - "org/bukkit/"
+      - "org/spigot/"
+      - "com/opuadm/linuxifymc/Database"
+      - "com/opuadm/linuxifymc/LinuxifyMC"
+      - "com/opuadm/linuxifymc/commands/"
+      - "com/opuadm/linuxifymc/machine/bin/BinCompiler"
+      - "com/opuadm/linuxifymc/machine/fs/FsRegistry"
+      - "com/opuadm/linuxifymc/machine/login/"
+      - "com/opuadm/linuxifymc/machine/shell/Shell"
+      - "com/opuadm/linuxifymc/machine/shell/SudoContext"
+      - "com/opuadm/linuxifymc/machine/states/"
+      - "com/opuadm/linuxifymc/machine/logs/"

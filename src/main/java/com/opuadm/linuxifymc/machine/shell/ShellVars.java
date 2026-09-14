@@ -6,7 +6,6 @@ public class ShellVars
 {
     public static final String[] cmds = {
             "help",
-            "test",
             "uname",
             "cd",
             "ls",
@@ -14,6 +13,8 @@ public class ShellVars
             "chown",
             "mkdir",
             "rm",
+            "ln",
+            "grep",
             "cat",
             "serverfetch",
             "neofetch",
@@ -21,14 +22,15 @@ public class ShellVars
             "touch",
             "sudo",
             "su",
-            "exit"
+            "exit",
+            "build"
     };
 
     public static List<String> LsOpts() {
         return List.of("-a", "-o", "-ao");
     }
 
-    public static List<String> UnameOpts()  { return List.of("-s", "-v", "--help", "-h"); }
+    public static List<String> UnameOpts()  { return List.of("-s", "-v", "-a", "--help", "-h"); }
 
     public static List<String> UnameOptsS()  { return List.of("-v"); }
 
